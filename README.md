@@ -1,4 +1,5 @@
-# Automatic Speech Recognition (ASR) System for Preference Grammar (PG)
+# Automatic Speech Recognition (ASR) Model for Preference Grammar (PG) Automation
+![System Architecture Diagram](https://github.com/user-attachments/assets/6e62efec-f807-46b1-a30e-7c1cdc45b211)
 
 ## Overview
 
