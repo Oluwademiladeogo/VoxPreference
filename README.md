@@ -55,6 +55,43 @@ This project provides the code implementation of a ([research on Preference Gram
 - **Scalable Training:** AWS EC2 GPU instances or AWS SageMaker
 
 ---
+## Repo Structure
+
+project-root/
+├── server/                 # Backend server folder
+│   ├── Dockerfile          # Dockerfile for the server
+│   ├── package.json        # Node.js dependencies for the server
+│   ├── src/                # Server source code
+│   │   ├── index.ts        # Main server entry point
+│   │   ├── routes/         # API route handlers
+│   │   ├── controllers/    # Controller logic
+│   │   ├── middleware/     # Middleware logic (e.g., authentication)
+│   │   └── utils/          # Utility functions
+│   └── tests/              # Server-specific tests
+│       └── test_server.ts  # Example test
+│
+├── model/                  # Model development folder
+│   ├── Dockerfile          # Dockerfile for the model
+│   ├── requirements.txt    # Python dependencies
+│   ├── app.py              # Python app entry point
+│   ├── src/                # Model source code
+│   │   ├── training/       # Training scripts and configs
+│   │   ├── inference.py    # Model inference script
+│   │   ├── preprocess.py   # Data preprocessing logic
+│   │   └── utils.py        # Helper functions
+│   └── tests/              # Model-specific tests
+│       └── test_model.py   # Example test
+│
+├── shared/                 # Shared libraries or utilities
+│   ├── config/             # Shared configuration files
+│   │   └── settings.yaml   # Application-wide settings
+│   └── utils/              # Shared utility functions
+│       └── logger.py       # Example logger utility
+│
+├── docker-compose.yml      # For orchestrating multiple services
+├── .env                    # Environment variables
+├── .gitignore              # Git ignore file
+└── README.md               # Project overview and documentation
 
 ## Project Setup
 
