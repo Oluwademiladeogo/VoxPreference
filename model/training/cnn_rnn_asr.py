@@ -1,31 +1,31 @@
-import torch
-import torch.nn as nn
+import tensorflow as tf
+from tensorflow.keras import layers, Model, Input
 
-class CNNRNNASR(nn.Module):
-    def __init__(self, input_dim, num_phonemes):
-        super(CNNRNNASR, self).__init__()
-        self.conv1 = nn.Conv1d(input_dim, 128, kernel_size=5, padding=2)
-        self.pool1 = nn.MaxPool1d(kernel_size=2)
-        self.conv2 = nn.Conv1d(128, 256, kernel_size=3, padding=1)
-        self.pool2 = nn.MaxPool1d(kernel_size=2)
-        self.lstm = nn.LSTM(256, 256, num_layers=2, bidirectional=True, batch_first=True, dropout=0.3)
-        self.fc = nn.Linear(512, num_phonemes + 1)  # +1 for CTC blank token
-
-    def forward(self, x):
-        x = self.conv1(x)
-        x = torch.relu(x)
-        x = self.pool1(x)
-        x = self.conv2(x)
-        x = torch.relu(x)
-        x = self.pool2(x)
-        x = x.permute(0, 2, 1)  # (batch, time, features)
-        x, _ = self.lstm(x)
-        x = self.fc(x)
-        return x
-
-# Hyperparameters
-input_dim = 40  # Number of MFCC features
+# Hyperparameters (loaded from model_configs)
+input_shape = (None, 40)  # Variable-length input, 40 MFCC features
 num_phonemes = 50  # Example phoneme count
 
-# Instantiate the model
-asr_model = CNNRNNASR(input_dim, num_phonemes)
+# Input layer
+inputs = Input(shape=input_shape, name="speech_input")
+
+# CNN layers
+x = layers.Conv1D(filters=128, kernel_size=5, activation='relu', padding='same')(inputs)
+x = layers.MaxPooling1D(pool_size=2)(x)
+x = layers.Conv1D(filters=256, kernel_size=3, activation='relu', padding='same')(x)
+x = layers.MaxPooling1D(pool_size=2)(x)
+
+# Bidirectional LSTM layers
+x = layers.Bidirectional(layers.LSTM(256, return_sequences=True, dropout=0.3))(x)
+x = layers.Bidirectional(layers.LSTM(256, return_sequences=True, dropout=0.3))(x)
+
+# Dense layer for phoneme classification
+logits = layers.Dense(num_phonemes + 1, activation='softmax', name="phoneme_output")(x)
+
+# Define the model
+asr_model = Model(inputs=inputs, outputs=logits, name="CNN-RNN_ASR")
+
+# Compile with CTC loss
+asr_model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=0.001), loss=tf.keras.backend.ctc_batch_cost)
+
+# Model summary
+asr_model.summary()
