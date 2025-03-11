@@ -12,10 +12,8 @@ def get_paths():
 
 tsv_path, speech_files_dir = get_paths()
 
-# Load the TSV file
 df = pd.read_csv(tsv_path, sep='\t', header=None, names=['id', 'text'])
 
-# Get the first 10 entries
 train_data = []
 for index, row in df.iterrows():
     if index >= 10:

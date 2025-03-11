@@ -2,3 +2,6 @@ tensorflow
 librosa
 numpy
 epitran
+pandas
+tf2onnx
+pytest
