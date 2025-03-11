@@ -2,7 +2,7 @@ import numpy as np
 from model.preprocessing.feature_extraction import extract_features
 
 def load_dataset(file_list):
-    """Loads and preprocesses dataset (MFCC features & phoneme labels)."""
+    """Loads and preprocesses dataset (MFCC features & text labels)."""
     X, y = [], []
     for audio_path, label in file_list:
         features = extract_features(audio_path)
