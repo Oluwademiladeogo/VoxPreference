@@ -1,1 +1,4 @@
-Placeholder
+torch
+librosa
+numpy
+epitran
