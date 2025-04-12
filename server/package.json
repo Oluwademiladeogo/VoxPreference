@@ -15,10 +15,12 @@
     "format": "prettier --write \"src/**/*.{ts,tsx}\""
   },
   "dependencies": {
+    "@types/multer": "^1.4.12",
     "bcrypt": "^5.1.1",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
-    "helmet": "^8.0.0"
+    "helmet": "^8.0.0",
+    "multer": "^1.4.5-lts.2"
   }
 }
