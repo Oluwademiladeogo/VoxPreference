@@ -3,7 +3,6 @@ import tensorflow as tf
 from transformers import TFWav2Vec2ForCTC, Wav2Vec2Processor
 import librosa
 import sys
-from model.training.text_to_phoneme import text_to_phonemes
 sys.path.append("/Users/thebickersteth/Desktop/projects/VoxPreference")
 
 # Load pretrained wav2vec2 model and processor
@@ -26,5 +25,4 @@ def predict(audio_path):
 if __name__ == "__main__":
     audio_path = "/Users/thebickersteth/Desktop/projects/VoxPreference/data/SpeechFiles/ngf_00295_00053583157.wav"
     transcription = predict(audio_path)
-    phonemes = text_to_phonemes(transcription.lower())
-    print("Transcription:", transcription, "Phonemes:", phonemes)
+    print("Transcription:", transcription)
