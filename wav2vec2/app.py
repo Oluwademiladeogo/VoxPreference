@@ -3,9 +3,9 @@ from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 import io
 import librosa
-from transformers import TFWav2Vec2ForCTC, Wav2Vec2Processor
+from transformers import Wav2Vec2ForCTC, Wav2Vec2Processor
 from wav2vec2.utils.text_to_ipa import convert_to_ipa
-import tensorflow as tf
+import torch
 
 app = FastAPI()
 
@@ -18,16 +18,17 @@ app.add_middleware(
 )
 
 processor = Wav2Vec2Processor.from_pretrained("facebook/wav2vec2-base-960h")
-model = TFWav2Vec2ForCTC.from_pretrained("facebook/wav2vec2-base-960h", from_pt=True)
+model = Wav2Vec2ForCTC.from_pretrained("facebook/wav2vec2-base-960h")
 
 @app.post("/transcribe")
 async def transcribe(audioFile: UploadFile = File(...)):
     try:
         audio_bytes = await audioFile.read()
         audio_input, _ = librosa.load(io.BytesIO(audio_bytes), sr=16000)
-        inputs = processor(audio_input, sampling_rate=16000, return_tensors="tf")
-        logits = model(inputs.input_values).logits
-        predicted_ids = tf.argmax(logits, axis=-1)
+        inputs = processor(audio_input, sampling_rate=16000, return_tensors="pt")
+        with torch.no_grad():
+            logits = model(inputs.input_values).logits
+            predicted_ids = torch.argmax(logits, dim=-1)
         transcription = processor.batch_decode(predicted_ids.numpy())[0]
         ipa_result = convert_to_ipa(transcription)
         ipa = ipa_result["ipa"] if ipa_result["success"] else None
