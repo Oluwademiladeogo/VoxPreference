@@ -6,7 +6,7 @@ export const API_ENDPOINTS = {
 };
 
 export const API_CONFIG = {
-  MAX_FILE_SIZE: 50 * 1024 * 1024, // 20MB
+  MAX_FILE_SIZE: 50 * 1024 * 1024, // 50MB
   SUPPORTED_FILE_TYPES: [
     "audio/wav",
     "audio/mpeg",
@@ -14,5 +14,5 @@ export const API_CONFIG = {
     "audio/ogg",
     "audio/flac",
   ],
-  TIMEOUT: 510000000000, // 100 seconds
+  TIMEOUT: 5 * 60 * 1000, // 5 minutes in milliseconds
 };

@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 import io
 import librosa
 from transformers import Wav2Vec2ForCTC, Wav2Vec2Processor
-from wav2vec2.utils.text_to_ipa import convert_to_ipa
+from text_to_ipa import convert_to_ipa
 import torch
 
 app = FastAPI()
@@ -17,8 +17,19 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-processor = Wav2Vec2Processor.from_pretrained("facebook/wav2vec2-base-960h")
-model = Wav2Vec2ForCTC.from_pretrained("facebook/wav2vec2-base-960h")
+import os
+processor = Wav2Vec2Processor.from_pretrained("thebickersteth/wav2vec2-nigerian-english")
+model = Wav2Vec2ForCTC.from_pretrained("thebickersteth/wav2vec2-nigerian-english")
+# model.eval()
+
+@app.get("/")
+def root():
+    return {"message": "Welcome! This API is for transcription. Try /health or /transcribe."}
+
+
+@app.get("/health")
+def health():
+    return {"status": "ok"} 
 
 @app.post("/transcribe")
 async def transcribe(audioFile: UploadFile = File(...)):
@@ -34,18 +45,17 @@ async def transcribe(audioFile: UploadFile = File(...)):
         ipa = ipa_result["ipa"] if ipa_result["success"] else None
         ipa_error = ipa_result["error"] if not ipa_result["success"] else None
         print(transcription, ipa, ipa_error)
-        return {
-            "success": True,
-            "transcription": transcription,
-            "ipa": ipa,
-            "ipa_error": ipa_error
-        }
+        return JSONResponse(
+            status_code=200,
+            content={
+                "success": True,
+                "transcription": transcription,
+                "ipa": ipa,
+                "ipa_error": ipa_error
+            }
+        )
     except Exception as e:
         return JSONResponse(
             status_code=500,
             content={"success": False, "error": str(e)}
         )
-
-@app.get("/health")
-def health():
-    return {"status": "ok"} 
