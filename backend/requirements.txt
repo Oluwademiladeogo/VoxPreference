@@ -1,0 +1,9 @@
+fastapi==0.109.2
+uvicorn==0.27.1
+python-multipart==0.0.9
+numpy==1.26.4
+tensorflow==2.16.2
+transformers==4.51.2
+librosa==0.11.0
+phonemizer==3.0.1
+soundfile==0.13.1 
