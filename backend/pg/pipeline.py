@@ -303,14 +303,19 @@ class Analyzer:
 
                 # also search for words a stopped/fronted realisation could be transcribed as (three -> tree)
                 aliases = self.merger_neighbours(canonical, unit)
-                hits = find_targets(rec.audio, self.transcriber.words(rec.audio), set(canonical) | set(aliases), self.aligner)
+                heard = self.transcriber.words(rec.audio)
+                targets = set(canonical) | set(aliases)
+                hits = find_targets(rec.audio, heard, targets, self.aligner)
                 spans = []
                 for h in hits:
                     if h.span.word in aliases:
                         h.span.word = aliases[h.span.word]
                     spans.append(h.span)
                 if not spans:
-                    warnings.append(f"{rec.name}: no target word was heard clearly in the automatic transcript")
+                    found = sum(w.word in targets for w in heard)
+                    warnings.append(f"{rec.name}: no target word was heard clearly in the automatic transcript "
+                                    f"({len(heard)} words transcribed, {found} of them target words, none kept "
+                                    "after re-aligning each one with the audio)")
                     continue
             else:
                 spans = [s for s in self.aligner.align(rec.audio, rec.transcript) if s.word in canonical]

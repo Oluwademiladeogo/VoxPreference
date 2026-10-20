@@ -88,3 +88,14 @@ def test_speaker_separation_finds_the_three_speakers(analyzer, conversation):
             label.setdefault(speaker, set()).add(dia.speaker_at(start, end))
         assert all(len(v) == 1 for v in label.values()), label
         assert len({next(iter(v)) for v in label.values()}) == 3, label
+
+
+def test_unscripted_audio_finds_and_scores_the_words(analyzer, conversation):
+    """The podcast path end to end: speech recognition, re-alignment of each hit, scoring, speakers."""
+    from pg.pipeline import Recording
+
+    audio, _ = conversation
+    result = analyzer.analyse([Recording("conversation.wav", audio, transcript="auto", num_speakers=3)],
+                              WORDS, "TH-voiceless")
+    assert len(result.tokens) >= 4, result.warnings
+    assert len({t.speaker for t in result.tokens}) >= 2, result.warnings
