@@ -36,3 +36,11 @@ def test_two_level_without_embeddings_keeps_categories():
 def test_purity():
     assert purity([0, 0, 1, 1], ["x", "x", "y", "y"]) == 1.0
     assert purity([0, 0, 0, 0], ["x", "x", "y", "y"]) == 0.5
+
+
+def test_two_tokens_of_two_variants_do_not_crash():
+    import numpy as np
+    from pg.cluster import two_level
+
+    c = two_level(["θ", "t"], np.array([[1.0, 0.0], [0.0, 1.0]]))
+    assert c.categories == ["θ", "t"] and all(v != v for v in c.separation.values())  # NaN: not enough tokens

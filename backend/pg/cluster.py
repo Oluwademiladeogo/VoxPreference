@@ -89,7 +89,8 @@ def two_level(labels: list[str], embeddings: np.ndarray | None, max_sub: int = 3
                 secondary[i] = f"{c}.{order[s]}"
         centroids = np.stack([x[lab == c].mean(0) for c in categories])
         contrast = _unit(centroids) @ _unit(centroids).T
-        if len(categories) > 1:
+        # silhouettes need at least one category with two tokens (2 <= categories <= tokens - 1)
+        if 1 < len(categories) < len(labels):
             from sklearn.metrics import silhouette_samples
 
             sil = silhouette_samples(x, lab, metric="cosine")
