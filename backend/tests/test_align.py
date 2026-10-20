@@ -58,4 +58,7 @@ def test_whisper_repetition_loops_and_empty_words_are_dropped():
     kept = [w.word for w in drop_loops(loop)]
     assert kept == "so i like this and then".split()
     assert [w.word for w in drop_loops(spans("no no no really"))] == "no no no really".split()  # 3 is allowed
-    assert drop_loops(spans("think", dur=0.0)) == []
+    lone = drop_loops(spans("i think so", dur=0.0))  # untimed but not stacked: kept, with a nominal duration
+    assert [w.word for w in lone] == ["i", "think", "so"] and all(w.end > w.start for w in lone)
+    stacked = [WordSpan(w, 5.0, 5.0, 1.0) for w in "so why do you think".split()] + spans("ok")
+    assert [w.word for w in drop_loops(stacked)] == ["ok"]

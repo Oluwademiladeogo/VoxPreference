@@ -9,6 +9,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+from collections import Counter
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
@@ -104,11 +105,19 @@ class Transcriber:
         return words
 
 
-def drop_loops(spans: list[WordSpan], max_repeats: int = 3, max_n: int = 8) -> list[WordSpan]:
-    """Remove Whisper's repetition loops and words with no duration. On long conversational audio Whisper can
-    get stuck repeating a phrase ("i like this" x103), inventing words that were never said; a word or phrase
-    of 1-8 words repeated more than max_repeats times in a row keeps only its first occurrence."""
-    words = [w for w in spans if w.end - w.start > 0.01]
+def drop_loops(spans: list[WordSpan], max_repeats: int = 3, max_n: int = 8, pile: int = 3) -> list[WordSpan]:
+    """Remove Whisper's repetition loops. On long conversational audio Whisper can get stuck repeating a phrase
+    ("i like this" x103), inventing words that were never said: a phrase of 1-8 words repeated more than
+    max_repeats times in a row keeps only its first occurrence, and words stacked on one timestamp (pile or
+    more sharing a start, with no duration) are dropped. A lone word with no duration is real but untimed (some
+    transformers versions return many of these); it gets a nominal 0.3 s, as find_targets re-aligns it anyway."""
+    starts = Counter(round(w.start, 2) for w in spans if w.end - w.start <= 0.01)
+    words = []
+    for w in spans:
+        if w.end - w.start > 0.01:
+            words.append(w)
+        elif starts[round(w.start, 2)] < pile:
+            words.append(WordSpan(w.word, w.start, w.start + 0.3, w.score))
     keep = [True] * len(words)
     i = 0
     while i < len(words):

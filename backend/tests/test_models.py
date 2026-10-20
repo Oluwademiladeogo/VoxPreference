@@ -71,6 +71,11 @@ def test_speech_recognition_finds_the_target_words(analyzer, conversation):
     audio, _ = conversation
     heard = {w.word for w in analyzer.transcriber._transcribe(audio)}
     assert len(heard & set(WORDS)) >= 4, heard
+    # and they survive the loop filter that every transcript goes through (whatever transformers' timestamps)
+    from pg.asr import drop_loops
+
+    kept = {w.word for w in drop_loops(analyzer.transcriber._transcribe(audio))}
+    assert len(kept & set(WORDS)) >= 4, kept
 
 
 def test_speaker_separation_finds_the_three_speakers(analyzer, conversation):
