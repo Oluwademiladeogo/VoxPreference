@@ -1,6 +1,6 @@
 # Extra libraries for finetune_model.py only (run on a GPU machine, e.g. Colab); never installed in the live app.
--r requirements.txt
-datasets==5.1.0
-pyarrow==25.0.1
-accelerate==1.15.0
-jiwer==4.0.0
+-r requirements.in
+datasets>=5.0.1
+pyarrow>=23.0.1
+accelerate>=1.15.0
+jiwer>=4.0.0

@@ -1,0 +1,20 @@
+# Direct dependencies of the live app. requirements.txt is generated from this file for Linux:
+#   uv pip compile requirements.in -o requirements.txt --python-platform x86_64-manylinux_2_28 --python-version 3.12 \
+#     --extra-index-url https://download.pytorch.org/whl/cpu --index-strategy unsafe-best-match --exclude-newer <2 weeks ago>
+torch>=2.14
+torchaudio
+transformers>=5.10
+speechbrain>=1.1
+numpy
+scipy
+scikit-learn
+soundfile
+librosa
+wordfreq
+phonemizer>=3.4
+fastapi>=0.142
+starlette
+uvicorn
+python-multipart>=0.0.31
+pytest
+httpx
