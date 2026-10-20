@@ -1,0 +1,262 @@
+{
+  "about": "Units of pronunciation that Preference Grammar compares, the realisations to test for in the audio, and the reference judgements for the knowledge-based tenets (I-Ac; Ped-C lists). The PG sources assign these by expert judgement; entries marked provisional are defaults chosen from the cited literature and must be confirmed by the PG experts.",
+  "units": {
+    "TH-voiceless": {
+      "label": "<th>",
+      "phoneme": "θ",
+      "candidates": [
+        "θ",
+        "t",
+        "s",
+        "f",
+        "z",
+        "d"
+      ],
+      "international": [
+        "θ",
+        "t",
+        "t̪",
+        "f"
+      ],
+      "pedagogic_difficult": [],
+      "notes": "I-Ac: the Lingua Franca Core treats /θ/ as non-core and lists [t], [f] and [s] as substitutes without choosing; stopping ([t], [t̪]) is an established norm in Irish, Caribbean and Liberian English and in ICAO radiotelephony ('tree' for three), TH-fronting ([f]) in London English. No L1-variety norm uses [s] or [z]. This reproduces Ugorji's operability table for 'think'. ICE-Nigeria word-initial /θ/: [θ] 47%, [t] 49%, [s] 4% (Oyebola, Ho & Li 2019).",
+      "sources": [
+        "Ugorji 2010: 58 (tableau for <th> in 'think')",
+        "Jenkins 2000: 138, via Rosewarne & Basso 2017: 171-172",
+        "Walker 2010",
+        "Wells 1982 via 'Th-stopping'",
+        "Oyebola, Ho & Li 2019"
+      ],
+      "validation": {
+        "status": "validated",
+        "kappa": 0.68,
+        "accuracy": 0.82,
+        "majority_baseline": 0.58,
+        "balanced_accuracy": 0.84,
+        "share_error": 0.08,
+        "calibrated": false,
+        "note": "kappa 0.68 on 85 tokens from 22 Nigerian speakers (Speech Accent Archive; one paragraph, so new words are untested)"
+      }
+    },
+    "TH-voiced": {
+      "label": "<th>",
+      "phoneme": "ð",
+      "candidates": [
+        "ð",
+        "d",
+        "z",
+        "v",
+        "θ",
+        "t"
+      ],
+      "international": [
+        "ð",
+        "d",
+        "d̪",
+        "v"
+      ],
+      "pedagogic_difficult": [],
+      "notes": "Provisional: by analogy with /θ/ (LFC non-core; stopping established in Irish, Caribbean and Liberian English; fronting in London English). Nigerian realisations: [d] in the South, [z] among Hausa speakers when reading (Udofot; Muhammad-Gombe 2019).",
+      "sources": [
+        "Jenkins 2000 via Rosewarne & Basso 2017",
+        "Udofot n.d.",
+        "Muhammad-Gombe 2019"
+      ],
+      "validation": {
+        "status": "validated",
+        "kappa": 0.64,
+        "accuracy": 0.81,
+        "majority_baseline": 0.53,
+        "balanced_accuracy": 0.66,
+        "share_error": 0.09,
+        "calibrated": true,
+        "note": "kappa 0.64 on 129 tokens from 22 Nigerian speakers (Speech Accent Archive; one paragraph, so new words are untested)"
+      }
+    },
+    "NURSE": {
+      "label": "NURSE",
+      "phoneme": "ɜː",
+      "lexical_set": "NURSE",
+      "candidates": [
+        "ɜː",
+        "ɛ",
+        "a",
+        "ɔ",
+        "e",
+        "ə"
+      ],
+      "international": [
+        "ɜː",
+        "ɝ",
+        "ɜ",
+        "əː"
+      ],
+      "pedagogic_difficult": [],
+      "notes": "The NURSE quality is part of the Lingua Franca Core. Nigerian English measurements (9 Igbo speakers): [ɛ] 40%, [a] 31%, [ɔ] 16%, [ɜ] 8%, [e] 5%, largely spelling-led (Jamakovic & Fuchs 2019). Ugorji's national model: model з/ε; developmental ε/a/з.",
+      "sources": [
+        "Jenkins 2000; Walker 2010",
+        "Jamakovic & Fuchs 2019",
+        "Ugorji, ICAEISD 2024 slides (national model)"
+      ],
+      "validation": {
+        "status": "not validated",
+        "kappa": 0.23,
+        "accuracy": 0.43,
+        "majority_baseline": 0.41,
+        "balanced_accuracy": 0.51,
+        "share_error": 0.41,
+        "calibrated": false,
+        "note": "kappa 0.23 on 86 tokens from 21 Nigerian speakers (Speech Accent Archive; one paragraph, so new words are untested)"
+      }
+    },
+    "STRUT": {
+      "label": "STRUT",
+      "phoneme": "ʌ",
+      "lexical_set": "STRUT",
+      "candidates": [
+        "ʌ",
+        "ɔ",
+        "a",
+        "ə"
+      ],
+      "international": [
+        "ʌ",
+        "ɐ"
+      ],
+      "pedagogic_difficult": [],
+      "notes": "Provisional international list (RP/GA qualities). Nigerian English: [ɔ] (basic Southern), [a] (basic Hausa), [ʌ] at the sophisticated level (Jowitt 2019: 41 via Udofot); national model ʌ/ɒ.",
+      "sources": [
+        "Jowitt 2019 via Udofot n.d.",
+        "Ugorji, ICAEISD 2024 slides (national model)"
+      ],
+      "validation": {
+        "status": "not validated",
+        "note": "no human-labelled test yet"
+      }
+    },
+    "KIT": {
+      "label": "KIT",
+      "phoneme": "ɪ",
+      "lexical_set": "KIT",
+      "candidates": [
+        "ɪ",
+        "i",
+        "e"
+      ],
+      "international": [
+        "ɪ"
+      ],
+      "pedagogic_difficult": [],
+      "notes": "Provisional. Vowel length (KIT vs FLEECE) is core in the LFC. Nigerian English realises KIT and FLEECE alike as [i] (Jamakovic & Fuchs 2019); national model ɪ, developmental ɪ/i.",
+      "sources": [
+        "Walker 2010",
+        "Jamakovic & Fuchs 2019",
+        "Ugorji, ICAEISD 2024 slides (national model)"
+      ],
+      "validation": {
+        "status": "validated",
+        "kappa": 0.55,
+        "accuracy": 0.81,
+        "majority_baseline": 0.76,
+        "balanced_accuracy": 0.71,
+        "share_error": 0.08,
+        "calibrated": false,
+        "note": "kappa 0.55 on 112 tokens from 22 Nigerian speakers (Speech Accent Archive; one paragraph, so new words are untested)"
+      }
+    },
+    "FLEECE": {
+      "label": "FLEECE",
+      "phoneme": "iː",
+      "lexical_set": "FLEECE",
+      "candidates": [
+        "iː",
+        "ɪ"
+      ],
+      "international": [
+        "iː",
+        "i"
+      ],
+      "pedagogic_difficult": [],
+      "notes": "Provisional. Nigerian English [i]; national model i.",
+      "sources": [
+        "Jamakovic & Fuchs 2019",
+        "Ugorji, ICAEISD 2024 slides (national model)"
+      ],
+      "validation": {
+        "status": "not validated",
+        "kappa": 0.06,
+        "accuracy": 0.9,
+        "majority_baseline": 0.92,
+        "balanced_accuracy": 0.52,
+        "share_error": 0.05,
+        "calibrated": false,
+        "note": "kappa 0.06 on 183 tokens from 22 Nigerian speakers (Speech Accent Archive; one paragraph, so new words are untested)"
+      }
+    },
+    "GOAT": {
+      "label": "GOAT",
+      "phoneme": "əʊ",
+      "lexical_set": "GOAT",
+      "candidates": [
+        "o",
+        "əʊ",
+        "ɔ"
+      ],
+      "international": [
+        "əʊ",
+        "oʊ",
+        "o",
+        "oː"
+      ],
+      "pedagogic_difficult": [],
+      "notes": "Ugorji (2010) evaluates /o/, /əʊ/, /ɒ/ for GOAT: /o/ wins with no violations; /əʊ/ violates FreQ, Pho-S, Ped-C; /ɒ/ violates I-Ac, ContR, FreQ, DisaM (Jowitt 2015: 8). Ugorji's /ɒ/ is phonetically [ɔ]. Monophthongal GOAT is an established norm in Scottish, Irish, Welsh and Northern English (provisional: check Wells 1982). Measured Nigerian English: [o] 50%, [ɔ] 16% (Jamakovic & Fuchs 2019); /o/ 91% (Eka 1985).",
+      "sources": [
+        "Ugorji 2010 via Jowitt 2015: 8",
+        "Jamakovic & Fuchs 2019",
+        "Eka 1985 via Jowitt 2015"
+      ],
+      "validation": {
+        "status": "not validated",
+        "kappa": 0.16,
+        "accuracy": 0.72,
+        "majority_baseline": 0.87,
+        "balanced_accuracy": 0.6,
+        "share_error": 0.13,
+        "calibrated": false,
+        "note": "kappa 0.16 on 68 tokens from 22 Nigerian speakers (Speech Accent Archive; one paragraph, so new words are untested)"
+      }
+    },
+    "FACE": {
+      "label": "FACE",
+      "phoneme": "eɪ",
+      "lexical_set": "FACE",
+      "candidates": [
+        "e",
+        "eɪ",
+        "ɛ"
+      ],
+      "international": [
+        "eɪ",
+        "e",
+        "eː"
+      ],
+      "pedagogic_difficult": [],
+      "notes": "Provisional. Monophthongal FACE is an established norm in Scottish, Irish, Welsh and Northern English. Nigerian English [e] about 51% (Jamakovic & Fuchs 2019); /e/ about 95% (Eka 1985); Jowitt proposes /e/ for Nigerian RP; national model e/eɪ.",
+      "sources": [
+        "Jamakovic & Fuchs 2019",
+        "Jowitt 2015",
+        "Ugorji, ICAEISD 2024 slides (national model)"
+      ],
+      "validation": {
+        "status": "not validated",
+        "kappa": 0.13,
+        "accuracy": 0.54,
+        "majority_baseline": 0.72,
+        "balanced_accuracy": 0.42,
+        "share_error": 0.17,
+        "calibrated": false,
+        "note": "kappa 0.13 on 89 tokens from 22 Nigerian speakers (Speech Accent Archive; one paragraph, so new words are untested)"
+      }
+    }
+  }
+}

@@ -1,4 +1,5 @@
 import { API_ENDPOINTS, API_CONFIG } from "../config/api";
+import { PGAnalysisResult, PGUnitsResponse } from "../types/pg";
 
 interface ApiError extends Error {
   status?: number;
@@ -22,7 +23,8 @@ class ApiService {
         if (contentType?.includes("application/json")) {
           const errorData = await response.json();
           error.data = errorData;
-          error.message = errorData.message || "API request failed";
+          error.message =
+            errorData.message || errorData.error || "API request failed";
         } else {
           const text = await response.text();
           if (text.includes("<!DOCTYPE")) {
@@ -43,17 +45,30 @@ class ApiService {
     return response.json();
   }
 
-  private static async fetchWithTimeout(url: string, options: RequestInit) {
+  private static async fetchWithTimeout(
+    url: string,
+    options: RequestInit,
+    requestTimeout: number = API_CONFIG.TIMEOUT
+  ) {
     const controller = new AbortController();
     let timeoutId: number | undefined;
 
-    // Use default timeout if API_CONFIG.TIMEOUT is not set or is unreasonable
+    // Use default timeout if the requested timeout is not set or is unreasonable
     const timeout =
-      typeof API_CONFIG.TIMEOUT === "number" &&
-      API_CONFIG.TIMEOUT > 0 &&
-      API_CONFIG.TIMEOUT < 3600000
-        ? API_CONFIG.TIMEOUT
+      typeof requestTimeout === "number" &&
+      requestTimeout > 0 &&
+      requestTimeout < 3600000
+        ? requestTimeout
         : this.DEFAULT_TIMEOUT;
+
+    // Let a caller's signal (e.g. a cancel button) abort the request as well
+    const callerSignal = options.signal;
+    const abortFromCaller = () => controller.abort();
+    if (callerSignal?.aborted) {
+      controller.abort();
+    } else {
+      callerSignal?.addEventListener("abort", abortFromCaller);
+    }
 
     // Create a promise that rejects after the timeout
     const timeoutPromise = new Promise<never>((_, reject) => {
@@ -117,6 +132,7 @@ class ApiService {
       if (timeoutId !== undefined) {
         window.clearTimeout(timeoutId);
       }
+      callerSignal?.removeEventListener("abort", abortFromCaller);
     }
   }
 
@@ -155,6 +171,53 @@ class ApiService {
       return response;
     } catch (error) {
       console.error("Audio upload failed:", error);
+      throw error;
+    }
+  }
+
+  static async getPGUnits(): Promise<PGUnitsResponse> {
+    return this.fetchWithTimeout(API_ENDPOINTS.PG_UNITS, { method: "GET" });
+  }
+
+  static async analyzePG(
+    formData: FormData,
+    signal?: AbortSignal
+  ): Promise<PGAnalysisResult> {
+    const files = formData.getAll("files");
+
+    if (!files.length) {
+      throw new Error("No audio files provided in FormData");
+    }
+    if (!files.every((file) => file instanceof File)) {
+      throw new Error("Invalid file data provided - all entries must be files");
+    }
+
+    console.log("Starting PG analysis...", {
+      fileCount: files.length,
+      words: formData.get("words"),
+      unit: formData.get("unit"),
+      ranking: formData.get("ranking"),
+      timeout: API_CONFIG.PG_ANALYZE_TIMEOUT,
+    });
+
+    try {
+      const response = await this.fetchWithTimeout(
+        API_ENDPOINTS.PG_ANALYZE,
+        {
+          method: "POST",
+          body: formData,
+          signal,
+          // Intentionally omitting Content-Type to let browser set it with boundary
+        },
+        API_CONFIG.PG_ANALYZE_TIMEOUT
+      );
+      if (!response.success) {
+        throw new Error(response.error || "PG analysis failed");
+      }
+      console.log("PG analysis completed successfully");
+      return response;
+    } catch (error) {
+      console.error("PG analysis failed:", error);
       throw error;
     }
   }

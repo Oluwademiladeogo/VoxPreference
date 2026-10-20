@@ -1,10 +1,123 @@
-# name: CI/CD Pipeline for ASR-PG
+# One pipeline for the whole app: test the frontend and backend on every push and pull request; on a push to main,
+# deploy to the Hugging Face Space (thebickersteth/voxpreference, which builds the Docker image itself); once a day,
+# visit the Space so the free hardware does not go to sleep (it sleeps after 48 h without visits).
+#
+# No stored token: the Space trusts this repo's ci-cd.yml on main (Hugging Face "Trusted Publishers"), and each
+# deploy swaps GitHub's short-lived identity token for a one-hour Hugging Face token scoped to the Space.
+name: Test and deploy
 
-# on:
-#   push:
-#     branches:
-#       - main
-#       - dev
-#   pull_request:
-#     branches:
-#       - main
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: "17 5 * * *" # daily, 06:17 in Lagos
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  SPACE: thebickersteth/voxpreference
+  SPACE_URL: https://thebickersteth-voxpreference.hf.space
+
+jobs:
+  frontend:
+    if: github.event_name != 'schedule'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: VoxPreference-frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: VoxPreference-frontend/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run build
+
+  backend:
+    if: github.event_name != 'schedule'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/requirements-tested.txt
+      - run: pip install --extra-index-url https://download.pytorch.org/whl/cpu -r requirements-tested.txt
+      # the pronunciation dictionaries (small); the tests use stand-ins for the large speech models
+      - run: python -m pg.kb.fetch
+      - run: python -m pytest -q
+
+  deploy:
+    needs: [frontend, backend]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # lets the job prove to Hugging Face that it is this repo's workflow
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install "huggingface_hub>=1.19,<2"
+      - name: Get a one-hour Hugging Face token for the Space
+        env:
+          HF_OIDC_RESOURCE: spaces/${{ env.SPACE }}
+        run: |
+          token="$(hf auth token)"
+          echo "::add-mask::$token"
+          echo "HF_TOKEN=$token" >> "$GITHUB_ENV"
+      - name: Upload to the Space
+        env:
+          HF: hf
+          PYTHON: python
+        run: scripts/deploy_space.sh --push
+      - name: Wait until the Space is running
+        run: |
+          python - <<'PY'
+          import os, sys, time
+          from huggingface_hub import HfApi
+          api, t0, stage = HfApi(), time.time(), None
+          time.sleep(30)  # let the new commit start a build
+          while time.time() - t0 < 1800:
+              stage = api.get_space_runtime(os.environ["SPACE"]).stage
+              print(f"{int(time.time() - t0)}s {stage}", flush=True)
+              if stage == "RUNNING":
+                  sys.exit(0)
+              if stage in ("BUILD_ERROR", "RUNTIME_ERROR", "CONFIG_ERROR", "NO_APP_FILE"):
+                  sys.exit(f"the Space failed: {stage}; see https://huggingface.co/spaces/{os.environ['SPACE']}?logs=build")
+              time.sleep(20)
+          sys.exit(f"the Space was not running after 30 minutes (last stage {stage})")
+          PY
+      - name: Check the live app answers
+        run: curl -fsS --retry 10 --retry-delay 30 --retry-all-errors --max-time 120 "$SPACE_URL/pg/units" > /dev/null
+
+  keep-awake:
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+    steps:
+      - name: Visit the Space
+        run: curl -fsS --retry 10 --retry-delay 30 --retry-all-errors --max-time 300 "$SPACE_URL/pg/units" > /dev/null
+      # GitHub switches off scheduled workflows in a repository with no commits for 60 days;
+      # re-enabling the workflow through the API keeps the daily visit going
+      - name: Keep this schedule enabled
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api -X PUT "repos/${{ github.repository }}/actions/workflows/ci-cd.yml/enable"

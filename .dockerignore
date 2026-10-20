@@ -1,0 +1,5 @@
+VoxPreference-frontend/node_modules
+VoxPreference-frontend/dist
+backend/data
+**/__pycache__
+.git

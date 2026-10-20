@@ -1,0 +1,19 @@
+{
+ "about": "Per-unit temperature and variant offsets fitted by pg/calibrate.py on human-labelled Nigerian tokens (Speech Accent Archive, phonetician IPA). Kept only where they raise Cohen's kappa on held-out speakers with a speaker-bootstrap interval above zero. Refit with eval/fit_calibration.py when more labels exist.",
+ "model": "facebook/wav2vec2-xlsr-53-espeak-cv-ft",
+ "date": "2026-10-20",
+ "units": {
+  "TH-voiced": {
+   "temperature": 1.4131,
+   "offsets": {
+    "ð": 0.0,
+    "d": 2.2165,
+    "z": -0.0481,
+    "v": -1.4434,
+    "θ": 0.6117,
+    "t": -0.5229
+   },
+   "fitted_on": "129 human-labelled tokens from 22 speakers"
+  }
+ }
+}
