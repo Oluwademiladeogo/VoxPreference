@@ -1,0 +1,375 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>VoxPreference: a design review of the automated Preference Grammar tool</title>
+<style>
+  @page { size: A4; margin: 17mm 16mm; }
+  :root { --ink:#000; --mid:#444; --line:#bbb; --fill:#e6e6e6; --faint:#f2f2f2; }
+  body { font-family: "Charter", "Georgia", serif; color: var(--ink); background: #fff; font-size: 10.5pt; line-height: 1.48; margin: 0; }
+  h1 { font-family: "Avenir Next", "Helvetica Neue", sans-serif; font-size: 21pt; margin: 0 0 4px; letter-spacing: -0.3px; }
+  h2 { font-family: "Avenir Next", "Helvetica Neue", sans-serif; font-size: 13.5pt; margin: 20px 0 6px; padding-bottom: 2px; border-bottom: 1px solid var(--ink); break-after: avoid; }
+  h3 { font-family: "Avenir Next", "Helvetica Neue", sans-serif; font-size: 11pt; margin: 14px 0 4px; break-after: avoid; }
+  p { margin: 6px 0; }
+  .sub { color: var(--mid); font-size: 10pt; margin-bottom: 12px; }
+  .lead { border-top: 2px solid var(--ink); border-bottom: 1px solid var(--ink); padding: 8px 0; margin: 10px 0 14px; }
+  table { border-collapse: collapse; width: 100%; margin: 8px 0 10px; font-size: 9.5pt; break-inside: avoid; }
+  th, td { border: 1px solid var(--line); padding: 4px 7px; text-align: left; vertical-align: top; }
+  th { background: var(--faint); font-family: "Avenir Next", "Helvetica Neue", sans-serif; font-weight: 600; }
+  table.comp { font-size: 9.3pt; margin: 6px 0 10px; break-inside: auto; } table.comp tr { break-inside: avoid; } table.comp th { break-after: avoid; }
+  table.comp th { background: #fff; border: none; border-top: 1.5px solid var(--ink); padding: 5px 0 3px; font-size: 10pt; }
+  table.comp td { border: none; border-top: 1px solid var(--line); padding: 3px 7px 3px 0; }
+  table.comp td.k { width: 23%; font-family: "Avenir Next", "Helvetica Neue", sans-serif; font-size: 8.6pt; color: var(--mid); text-transform: uppercase; letter-spacing: 0.3px; padding-top: 4px; }
+  .num { display: inline-block; min-width: 17px; height: 17px; line-height: 17px; text-align: center; background: #000; color: #fff; border-radius: 50%; font-size: 9pt; margin-right: 6px; }
+  .ipa { font-family: "Doulos SIL", "Charis SIL", "Lucida Grande", "Arial Unicode MS", sans-serif; }
+  ul, ol { margin: 4px 0 6px 18px; padding: 0; } li { margin: 2px 0; }
+  code { font-family: "SF Mono", Menlo, monospace; font-size: 8.6pt; }
+  figure { margin: 10px 0; break-inside: avoid; } figcaption { color: var(--mid); font-size: 9pt; margin-top: 4px; }
+  .tab td, .tab th { text-align: center; } .tab td:first-child, .tab th:first-child { text-align: left; }
+  .dead { background: var(--fill); }
+  .sharp { font-style: italic; }
+</style>
+</head>
+<body>
+
+<h1>VoxPreference: a design review of the automated Preference Grammar tool</h1>
+<div class="sub">Demilade Bickersteth · Covenant University · 20 October 2026</div>
+
+<div class="lead">
+<p>Prof. C.U.C. Ugorji's Preference Grammar picks a preferred pronunciation from the forms speakers actually use, by ranking them on six tenets. Done by hand it takes a great many hours, so the team set out to automate it: our ICAEISD 2024 paper and slides, Prof's framework for the automation, the PRD, and the user flow in Figure 1. My final-year project was one block of that plan, the speech-to-text conversion.</p>
+<p>This report reviews the whole planned tool, component by component: what the plan said, what made sense, what did not and why, and what we found and built instead. Then it gives the results. The tool now runs end to end, from recordings to the operability table, is live on the web, and is reliable today for voiceless and voiced <span class="ipa">&lt;th&gt;</span> and the KIT vowel.</p>
+</div>
+
+<h2>1. Preference Grammar, in Ugorji's terms</h2>
+<p>PG has three components. The input is every attested form of a sound, in its words, as speakers produce it, with no underlying forms. The parameters are the six tenets: International acceptance, Contrastiveness, Frequency, Disambiguity, Phonetic simplicity and Pedagogic convenience, ranked by default as I-Ac &gt;&gt; ContR &gt;&gt; FreQ &gt;&gt; DisaM &gt;&gt; Pho-S &gt;&gt; Ped-C. As in Optimality Theory the ranking is strict but violable, and a user may promote, demote or delete a parameter. The output is the preferred forms, the candidates that earn the fewest violations. The working is shown in an operability table. The published examples are <i>think</i>, where <span class="ipa">[θɪŋk]</span> beats <span class="ipa">[tɪŋk]</span>, <span class="ipa">[sɪŋk]</span> and <span class="ipa">[zɪŋk]</span>, and the GOAT vowel, where <span class="ipa">[o]</span> wins. One outcome of PG is a Nigerian national model of the vowels.</p>
+<p>So the automated tool has one job: take recordings to attested forms, attested forms to marks on six ranked tenets, and marks to the operability table and the preferred form. Any automation has to reproduce Ugorji's two worked examples.</p>
+
+<h2>2. What we found, in short</h2>
+<ul>
+  <li><b>The central mistake was converting speech to text and then text to IPA.</b> That answers "what was said", but PG asks "how was it said". Because the output always looked plausible, this hid every other fault.</li>
+  <li><b>Clustering was asked to discover pronunciations</b> from features that mostly carry the speaker and the microphone.</li>
+  <li><b>The tenets had definitions but no evidence.</b> Without a rule for each mark, nothing could be ranked.</li>
+  <li><b>Success was measured by word error rate.</b> For PG what matters is how well the variant shares are estimated, checked against human labels.</li>
+  <li><b>The infrastructure was planned before the method worked.</b></li>
+</ul>
+<p class="sharp">Hear the sound directly, give every tenet its evidence, and measure against human ears.</p>
+
+<h2>3. The planned tool</h2>
+<figure>
+<svg width="100%" viewBox="0 0 760 842" xmlns="http://www.w3.org/2000/svg" font-family="Avenir Next, Helvetica, sans-serif" font-size="11" fill="#000">
+<defs><marker id="ar" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#000"/></marker></defs>
+<rect x="150" y="10" width="150" height="34" rx="17" fill="#fff" stroke="#000"/>
+<text x="225.0" y="31" text-anchor="middle">User input</text>
+<path d="M225 44 V56 H95 V68 M225 56 H275 V68" fill="none" stroke="#000"/>
+<g stroke="#000" marker-end="url(#ar)"><line x1="95" y1="62" x2="95" y2="68"/><line x1="275" y1="62" x2="275" y2="68"/></g>
+<rect x="20" y="70" width="150" height="44" rx="0" fill="#fff" stroke="#000"/>
+<text x="95.0" y="89" text-anchor="middle">Target word and</text>
+<text x="95.0" y="103" text-anchor="middle">priority ranking</text>
+<rect x="200" y="70" width="150" height="44" rx="0" fill="#fff" stroke="#000"/>
+<text x="275.0" y="96" text-anchor="middle">Audio files</text>
+<rect x="185" y="128" width="180" height="224" fill="none" stroke="#000" stroke-width="2.6"/>
+<rect x="200" y="150" width="150" height="38" rx="0" fill="#fff" stroke="#000"/>
+<text x="275.0" y="173" text-anchor="middle">ASR processing</text>
+<rect x="200" y="200" width="150" height="38" rx="0" fill="#fff" stroke="#000"/>
+<text x="275.0" y="223" text-anchor="middle">Phoneme tokenisation</text>
+<rect x="200" y="250" width="150" height="38" rx="0" fill="#fff" stroke="#000"/>
+<text x="275.0" y="273" text-anchor="middle">IPA mapping</text>
+<rect x="200" y="300" width="150" height="38" rx="0" fill="#fff" stroke="#000"/>
+<text x="275.0" y="323" text-anchor="middle">CSV or VTT file</text>
+<rect x="185" y="368" width="180" height="176" fill="none" stroke="#000" stroke-dasharray="4 3"/>
+<rect x="200" y="390" width="150" height="38" rx="0" fill="#fff" stroke="#000"/>
+<text x="275.0" y="413" text-anchor="middle">Primary clustering</text>
+<rect x="200" y="440" width="150" height="38" rx="0" fill="#fff" stroke="#000"/>
+<text x="275.0" y="463" text-anchor="middle">Secondary clustering</text>
+<rect x="200" y="490" width="150" height="44" rx="0" fill="#fff" stroke="#000"/>
+<text x="275.0" y="509" text-anchor="middle">Matrix showing</text>
+<text x="275.0" y="523" text-anchor="middle">contrastiveness</text>
+<rect x="60" y="562" width="305" height="182" fill="none" stroke="#000" stroke-dasharray="4 3"/>
+<rect x="200" y="586" width="150" height="38" rx="0" fill="#fff" stroke="#000"/>
+<text x="275.0" y="609" text-anchor="middle">Matrix processing</text>
+<rect x="200" y="638" width="150" height="34" rx="0" fill="#fff" stroke="#000"/>
+<text x="275.0" y="659" text-anchor="middle">Outputs</text>
+<rect x="75" y="694" width="130" height="40" rx="0" fill="#fff" stroke="#000"/>
+<text x="140.0" y="718" text-anchor="middle">Operability table</text>
+<rect x="225" y="694" width="130" height="40" rx="0" fill="#fff" stroke="#000"/>
+<text x="290.0" y="711" text-anchor="middle">Standard</text>
+<text x="290.0" y="725" text-anchor="middle">pronunciation</text>
+<rect x="20" y="760" width="345" height="74" fill="none" stroke="#000" stroke-dasharray="4 3"/>
+<rect x="28" y="786" width="50" height="38" fill="#fff" stroke="#000"/><text x="53" y="809" text-anchor="middle" font-size="10">I-Ac</text>
+<rect x="84" y="786" width="50" height="38" fill="#fff" stroke="#000"/><text x="109" y="809" text-anchor="middle" font-size="10">ContR</text>
+<rect x="140" y="786" width="50" height="38" fill="#fff" stroke="#000"/><text x="165" y="809" text-anchor="middle" font-size="10">FreQ</text>
+<rect x="196" y="786" width="50" height="38" fill="#fff" stroke="#000"/><text x="221" y="809" text-anchor="middle" font-size="10">DisaM</text>
+<rect x="252" y="786" width="50" height="38" fill="#fff" stroke="#000"/><text x="277" y="809" text-anchor="middle" font-size="10">Pho-S</text>
+<rect x="308" y="786" width="50" height="38" fill="#fff" stroke="#000"/><text x="333" y="809" text-anchor="middle" font-size="10">Ped-C</text>
+<g stroke="#000" marker-end="url(#ar)"><line x1="275" y1="114" x2="275" y2="148"/><line x1="275" y1="188" x2="275" y2="198"/><line x1="275" y1="238" x2="275" y2="248"/><line x1="275" y1="288" x2="275" y2="298"/><line x1="275" y1="338" x2="275" y2="388"/><line x1="275" y1="428" x2="275" y2="438"/><line x1="275" y1="478" x2="275" y2="488"/><line x1="275" y1="534" x2="275" y2="584"/><line x1="275" y1="624" x2="275" y2="636"/></g>
+<g stroke="#000" fill="none" marker-end="url(#ar)"><path d="M95 114 V605 H198"/><path d="M250 672 V682 H140 V692"/><line x1="290" y1="672" x2="290" y2="692"/><line x1="140" y1="734" x2="140" y2="758"/></g>
+<text x="103" y="420" font-size="10" fill="#444">apply priority</text><text x="103" y="433" font-size="10" fill="#444">ranking</text>
+<text x="0" y="0" font-size="10.5" font-weight="700" letter-spacing="0.8" transform="translate(381 240) rotate(90)" text-anchor="middle">DEMILADE'S FYP</text>
+<rect x="430" y="300" width="300" height="100" rx="0" fill="#fff" stroke="#000"/>
+<text x="580.0" y="354" text-anchor="middle"></text>
+<text x="580" y="326" text-anchor="middle" font-weight="700">API, hosting and infrastructure (PRD)</text>
+<text x="580" y="344" text-anchor="middle" font-size="10.4">Node.js/Express API; AWS S3, RDS, MongoDB,</text>
+<text x="580" y="362" text-anchor="middle" font-size="10.4">Redis queue; EKS or SageMaker serving;</text>
+<text x="580" y="380" text-anchor="middle" font-size="10.4">ONNX; Prometheus, Grafana, CloudWatch; ELK</text>
+<text x="580" y="420" text-anchor="middle" font-size="10" fill="#444">runs every stage on the left</text>
+<g font-size="10"><circle cx="440" cy="40" r="8" fill="#000"/><text x="440" y="44" fill="#fff" text-anchor="middle" font-size="9.5" font-weight="700">n</text><text x="456" y="44">component n, reviewed in section 4</text><rect x="430" y="62" width="22" height="14" fill="none" stroke="#000" stroke-width="2.6"/><text x="460" y="73">my final-year project (thesis)</text><rect x="430" y="88" width="22" height="14" fill="none" stroke="#000" stroke-dasharray="4 3"/><text x="460" y="99">the rest of the planned tool</text></g>
+<rect x="191" y="122" width="164" height="12" fill="#fff"/><text x="193" y="131" font-size="8.5" letter-spacing="0.6">SPEECH TO TEXT CONVERSION</text>
+<rect x="191" y="362" width="108" height="12" fill="#fff"/><text x="193" y="371" font-size="8.5" letter-spacing="0.6">AUDIO CLUSTERING</text>
+<rect x="66" y="556" width="215" height="12" fill="#fff"/><text x="68" y="565" font-size="8.5" letter-spacing="0.6">STANDARD PRONUNCIATION GENERATION</text>
+<rect x="38" y="754" width="127" height="12" fill="#fff"/><text x="40" y="763" font-size="8.5" letter-spacing="0.6">EVALUATION CRITERIA</text>
+<circle cx="150" cy="10" r="9" fill="#000"/><text x="150" y="13.6" fill="#fff" text-anchor="middle" font-size="9.5" font-weight="700">1</text>
+<circle cx="20" cy="70" r="9" fill="#000"/><text x="20" y="73.6" fill="#fff" text-anchor="middle" font-size="9.5" font-weight="700">2</text>
+<circle cx="200" cy="70" r="9" fill="#000"/><text x="200" y="73.6" fill="#fff" text-anchor="middle" font-size="9.5" font-weight="700">3</text>
+<circle cx="200" cy="150" r="9" fill="#000"/><text x="200" y="153.6" fill="#fff" text-anchor="middle" font-size="9.5" font-weight="700">4</text>
+<circle cx="200" cy="200" r="9" fill="#000"/><text x="200" y="203.6" fill="#fff" text-anchor="middle" font-size="9.5" font-weight="700">5</text>
+<circle cx="200" cy="250" r="9" fill="#000"/><text x="200" y="253.6" fill="#fff" text-anchor="middle" font-size="9.5" font-weight="700">6</text>
+<circle cx="200" cy="300" r="9" fill="#000"/><text x="200" y="303.6" fill="#fff" text-anchor="middle" font-size="9.5" font-weight="700">7</text>
+<circle cx="200" cy="390" r="9" fill="#000"/><text x="200" y="393.6" fill="#fff" text-anchor="middle" font-size="9.5" font-weight="700">8</text>
+<circle cx="200" cy="440" r="9" fill="#000"/><text x="200" y="443.6" fill="#fff" text-anchor="middle" font-size="9.5" font-weight="700">9</text>
+<circle cx="200" cy="490" r="9" fill="#000"/><text x="200" y="493.6" fill="#fff" text-anchor="middle" font-size="9.5" font-weight="700">10</text>
+<circle cx="200" cy="586" r="9" fill="#000"/><text x="200" y="589.6" fill="#fff" text-anchor="middle" font-size="9.5" font-weight="700">11</text>
+<circle cx="200" cy="638" r="9" fill="#000"/><text x="200" y="641.6" fill="#fff" text-anchor="middle" font-size="9.5" font-weight="700">12</text>
+<circle cx="75" cy="694" r="9" fill="#000"/><text x="75" y="697.6" fill="#fff" text-anchor="middle" font-size="9.5" font-weight="700">13</text>
+<circle cx="225" cy="694" r="9" fill="#000"/><text x="225" y="697.6" fill="#fff" text-anchor="middle" font-size="9.5" font-weight="700">14</text>
+<circle cx="20" cy="760" r="9" fill="#000"/><text x="20" y="763.6" fill="#fff" text-anchor="middle" font-size="9.5" font-weight="700">15</text>
+<circle cx="430" cy="300" r="9" fill="#000"/><text x="430" y="303.6" fill="#fff" text-anchor="middle" font-size="9.5" font-weight="700">16</text>
+</svg>
+<figcaption>Figure 1. The planned automated PG tool: the team's user flow for the Preference Grammar system, redrawn, with the PRD's infrastructure beside it. The numbers match the components in section 4. The block in the thick outline, speech-to-text conversion, was my final-year project.</figcaption>
+</figure>
+<p class="sharp">The aim was right. Most of what went wrong sat between the boxes: what each one had to hand to the next.</p>
+
+<h2>4. Component by component</h2>
+<h3>Input</h3>
+<table class="comp">
+<tr><th colspan="2"><span class="num">1</span> User input</th></tr>
+<tr><td class="k">The plan</td><td>A web system where a user uploads speech and sets a tenet preference; the PRD adds user stories for researchers, educators, developers, policy makers and learners.</td></tr>
+<tr><td class="k">Made sense</td><td>Putting the user's ranking at the centre. Ugorji's PG lets a user promote, demote or delete parameters, so the tool has to let them.</td></tr>
+<tr><td class="k">Did not, and why</td><td>Five audiences and their features were planned before one analysis worked end to end.</td></tr>
+<tr><td class="k">What we found, and what the tool does now</td><td>One page for one job: words, recordings and a ranking in; the operability table and the preferred form out. Everything else can wait for that to be trusted.</td></tr>
+</table>
+<table class="comp">
+<tr><th colspan="2"><span class="num">2</span> Target word and priority ranking</th></tr>
+<tr><td class="k">The plan</td><td>The user gives a target word and a priority ranking; the ranking is applied at matrix processing.</td></tr>
+<tr><td class="k">Made sense</td><td>PG's input is attested forms within lexical contexts, and the word is that context. The ranking belongs to the user.</td></tr>
+<tr><td class="k">Did not, and why</td><td>One word gives few tokens. The plan did not say which sound in the word is under study, and a ranking as a plain list cannot pool two tenets or delete one, which PG allows.</td></tr>
+<tr><td class="k">What we found, and what the tool does now</td><td>Several words that share a sound; the sound is chosen from a list (or inferred) and each is marked validated or not. The ranking editor reorders, deletes and pools tenets.</td></tr>
+</table>
+<table class="comp">
+<tr><th colspan="2"><span class="num">3</span> Audio files</th></tr>
+<tr><td class="k">The plan</td><td>Accept large continuous speech files. Prof's framework reviews continuous speech separation for overlapping talk.</td></tr>
+<tr><td class="k">Made sense</td><td>Real speech from many speakers, including long recordings, is what PG needs.</td></tr>
+<tr><td class="k">Did not, and why</td><td>Every file was treated as one voice. Separation was reviewed in the framework but never designed, so a podcast panel would have counted as one speaker.</td></tr>
+<tr><td class="k">What we found, and what the tool does now</td><td>Any common audio format, voice notes recorded in the browser, and podcasts. Speaker separation (ECAPA) credits each word to the person who said it (section 6).</td></tr>
+</table>
+<h3>Speech to text conversion: my final-year project</h3>
+<table class="comp">
+<tr><th colspan="2"><span class="num">4</span> ASR processing</th></tr>
+<tr><td class="k">The plan</td><td>PRD: a CNN-RNN trained on Colab with MFCC features. My thesis: wav2vec2 fine-tuned on Nigerian English (SLR70: 5.77 hours, 3,359 utterances, 31 speakers).</td></tr>
+<tr><td class="k">Made sense</td><td>Starting from a pretrained wav2vec2 model and public Nigerian recordings. Training a CNN-RNN from scratch on about 6 hours of audio would not have worked.</td></tr>
+<tr><td class="k">Did not, and why</td><td>The fine-tune never trained. The transcripts were lowercased against an uppercase vocabulary, so all 174,915 label tokens became <code>&lt;unk&gt;</code>. transformers 4.51.3 left <code>masked_spec_embed</code> uninitialised: every loss was NaN, logged as 0.000000, and the learning rate stayed at 0 for 3,780 steps. The published model is byte-for-byte <code>facebook/wav2vec2-base-960h</code>. The random 90/10 split put all 31 speakers in both halves and 67 of 336 validation sentences (20%) in training too. The stock model scores WER 36.7% there; the thesis reports 41.10% with the same 112 deletions, so it very likely measured the stock model. Underneath all of it, ASR answers which words were said, and PG asks how.</td></tr>
+<tr><td class="k">What we found, and what the tool does now</td><td>ASR only finds the words. Whisper small searches unscripted audio, including look-alike words (<i>tree</i> for <i>three</i>); a letter aligner places words when there is a transcript. The fine-tuning script is fixed (a 30-step check: loss 1.40 to 0.72, no NaN) but not rerun, because the tool does not need it. A full run would take 2 to 3 hours per pass on this laptop, or about an hour on a free Colab GPU.</td></tr>
+</table>
+<table class="comp">
+<tr><th colspan="2"><span class="num">5</span> Phoneme tokenisation</th></tr>
+<tr><td class="k">The plan</td><td>Split speech into phoneme tokens before clustering.</td></tr>
+<tr><td class="k">Made sense</td><td>PG works on segments inside words, so the tool must find the segment.</td></tr>
+<tr><td class="k">Did not, and why</td><td>In the thesis the tokens came from text: the transcription split into words. Nothing in the audio was tokenised.</td></tr>
+<tr><td class="k">What we found, and what the tool does now</td><td>The pronouncing dictionary says where the sound sits in each word; the phone model's alignment finds its frames in the audio.</td></tr>
+</table>
+<table class="comp">
+<tr><th colspan="2"><span class="num">6</span> IPA mapping</th></tr>
+<tr><td class="k">The plan</td><td>Map words or phonemes to IPA: eSpeak in the thesis, a dictionary such as CMU in the presentation.</td></tr>
+<tr><td class="k">Made sense</td><td>IPA is the shared notation, and PG tables are written in it.</td></tr>
+<tr><td class="k">Did not, and why</td><td>A dictionary gives the citation form. The thesis's own Table 4.2 gives "there" as <span class="ipa">[ðɛr]</span>, and it would say so whether the speaker said <span class="ipa">[ð]</span> or <span class="ipa">[d]</span>. This step erases the variation PG ranks.</td></tr>
+<tr><td class="k">What we found, and what the tool does now</td><td>Candidate pronunciations, written in IPA, are scored against the audio by a phone model (<code>wav2vec2-xlsr-53-espeak-cv-ft</code>), with a confidence for each token. Each sound carries a validation status (section 6).</td></tr>
+</table>
+<table class="comp">
+<tr><th colspan="2"><span class="num">7</span> CSV or VTT file</th></tr>
+<tr><td class="k">The plan</td><td>Write text and IPA to a CSV, a 5×6 matrix in the framework, or a VTT subtitle file.</td></tr>
+<tr><td class="k">Made sense</td><td>Plain files an analyst can open.</td></tr>
+<tr><td class="k">Did not, and why</td><td>A VTT file needs word times. The thesis estimated them from the clip's duration; the app itself returned no word times at all. The 5×6 size was fixed by the matrix, not by the data.</td></tr>
+<tr><td class="k">What we found, and what the tool does now</td><td>Downloads in CSV, JSON, HTML and subtitle formats, with measured start and end times for every token.</td></tr>
+</table>
+<h3>Audio clustering</h3>
+<table class="comp">
+<tr><th colspan="2"><span class="num">8</span> Primary clustering</th></tr>
+<tr><td class="k">The plan</td><td>K-means (and spectral clustering) on MFCC features to group similar sounds.</td></tr>
+<tr><td class="k">Made sense</td><td>Unsupervised grouping could find variants without labels.</td></tr>
+<tr><td class="k">Did not, and why</td><td>MFCCs of whole words group recordings by speaker and microphone more than by pronunciation. The number of clusters is unknown in advance, and a cluster does not say which variant it holds.</td></tr>
+<tr><td class="k">What we found, and what the tool does now</td><td>The phone model's variant label does the grouping: every token is <span class="ipa">[θ]</span>, <span class="ipa">[t]</span>, <span class="ipa">[s]</span> and so on, with a confidence.</td></tr>
+</table>
+<table class="comp">
+<tr><th colspan="2"><span class="num">9</span> Secondary clustering</th></tr>
+<tr><td class="k">The plan</td><td>Sub-clusters by cosine similarity, at most a 5×6 matrix.</td></tr>
+<tr><td class="k">Made sense</td><td>Looking for finer detail inside a variant.</td></tr>
+<tr><td class="k">Did not, and why</td><td>The same problem as above, and the matrix size decided the clusters.</td></tr>
+<tr><td class="k">What we found, and what the tool does now</td><td>Acoustic sub-clusters inside each variant, from the phone model's features. They barely separate anything, so the app shows them as exploratory only.</td></tr>
+</table>
+<table class="comp">
+<tr><th colspan="2"><span class="num">10</span> Matrix showing contrastiveness</th></tr>
+<tr><td class="k">The plan</td><td>A confusion matrix of the sub-clusters, used for the operability analysis.</td></tr>
+<tr><td class="k">Made sense</td><td>Contrast matters to PG; it is one of the six tenets.</td></tr>
+<tr><td class="k">Did not, and why</td><td>A confusion matrix measures how much clusters overlap acoustically. PG's Contrastiveness and Disambiguity ask something else: whether a variant merges a contrast and makes words sound alike.</td></tr>
+<tr><td class="k">What we found, and what the tool does now</td><td>The contrast matrix is kept as exploratory. Contrastiveness is marked from the Lingua Franca Core and Disambiguity from pronouncing dictionaries: <span class="ipa">[t]</span> in <i>think</i> merges 78 common word pairs, such as <i>bath</i> and <i>bat</i>.</td></tr>
+</table>
+<h3>Standard pronunciation generation</h3>
+<table class="comp">
+<tr><th colspan="2"><span class="num">11</span> Matrix processing</th></tr>
+<tr><td class="k">The plan</td><td>Apply the user's ranking to the matrix. The presentation: assign a rank to each cluster by quality or relevance.</td></tr>
+<tr><td class="k">Made sense</td><td>The ranking is the heart of PG.</td></tr>
+<tr><td class="k">Did not, and why</td><td>No rule said how a candidate earns a mark on each tenet, and ranking clusters by quality is not PG's evaluation.</td></tr>
+<tr><td class="k">What we found, and what the tool does now</td><td>Rules for each tenet that reproduce Ugorji's <i>think</i> and GOAT tableaux exactly, under strict domination. A variant competes once it has at least 3 tokens from 2 speakers. Experts can override any mark.</td></tr>
+</table>
+<table class="comp">
+<tr><th colspan="2"><span class="num">12</span> Outputs</th></tr>
+<tr><td class="k">The plan</td><td>The operability table and the standard pronunciation, saved as .txt and .csv. The presentation adds a "PG operability metric" of accuracy, consistency and usability.</td></tr>
+<tr><td class="k">Made sense</td><td>Two outputs, exactly as PG defines them.</td></tr>
+<tr><td class="k">Did not, and why</td><td>Accuracy and usability measure the software, not the pronunciation, and they do not belong in PG's operability.</td></tr>
+<tr><td class="k">What we found, and what the tool does now</td><td>Both outputs, plus warnings when a sound is not validated or the data is thin, and every token for checking by ear.</td></tr>
+</table>
+<table class="comp">
+<tr><th colspan="2"><span class="num">13</span> Operability table</th></tr>
+<tr><td class="k">The plan</td><td>Ugorji's tableau: candidates in rows, tenets in columns, violation marks in the cells.</td></tr>
+<tr><td class="k">Made sense</td><td>It is how PG shows its working.</td></tr>
+<tr><td class="k">Did not, and why</td><td>Never produced.</td></tr>
+<tr><td class="k">What we found, and what the tool does now</td><td>Produced in PG style, with an OT view. Figure 3 is the <i>think</i> table as the tool prints it.</td></tr>
+</table>
+<table class="comp">
+<tr><th colspan="2"><span class="num">14</span> Standard pronunciation</th></tr>
+<tr><td class="k">The plan</td><td>The winning candidate.</td></tr>
+<tr><td class="k">Made sense</td><td>PG's output component: the preferred forms earn the fewest violations.</td></tr>
+<tr><td class="k">Did not, and why</td><td>Nothing said how sure the winner is.</td></tr>
+<tr><td class="k">What we found, and what the tool does now</td><td>The preferred form, its tier (formal standard, allophone or outer norm), and how often it still wins when speakers are resampled and uncertain tokens redrawn.</td></tr>
+</table>
+<h3>Evaluation criteria</h3>
+<table class="comp">
+<tr><th colspan="2"><span class="num">15</span> Evaluation criteria: the six tenets</th></tr>
+<tr><td class="k">The plan</td><td>International acceptance, Contrastiveness, Frequency, Disambiguity, Phonetic simplicity and Pedagogic convenience, ranked I-Ac &gt;&gt; ContR &gt;&gt; FreQ &gt;&gt; DisaM &gt;&gt; Pho-S &gt;&gt; Ped-C.</td></tr>
+<tr><td class="k">Made sense</td><td>These are Ugorji's own definitions and default ranking.</td></tr>
+<tr><td class="k">Did not, and why</td><td>They are prose. Nothing said what evidence decides each mark, and Frequency can be read two ways.</td></tr>
+<tr><td class="k">What we found, and what the tool does now</td><td>A source of evidence for each tenet (section 7): a knowledge base, the Lingua Franca Core, the recordings, pronouncing dictionaries and PHOIBLE. Frequency works both ways, as a setting.</td></tr>
+</table>
+<h3>Around everything</h3>
+<table class="comp">
+<tr><th colspan="2"><span class="num">16</span> API, hosting and infrastructure</th></tr>
+<tr><td class="k">The plan</td><td>A Node.js/Express API; AWS S3, RDS (PostgreSQL), MongoDB and a Redis queue; serving on EKS or SageMaker; ONNX; Prometheus, Grafana, CloudWatch and ELK.</td></tr>
+<tr><td class="k">Made sense</td><td>An API, and containers.</td></tr>
+<tr><td class="k">Did not, and why</td><td>It was planned before the method worked. It is far more than a team of three can run, and it costs money every month.</td></tr>
+<tr><td class="k">What we found, and what the tool does now</td><td>One Python service serves the page and the API from one Docker image, live on Hugging Face's free hardware (section 6). One GitHub repository, deploy on push and a daily keep-awake visit are being set up.</td></tr>
+</table>
+
+<h2>5. The tool now</h2>
+<figure>
+<svg width="100%" viewBox="0 0 760 250" xmlns="http://www.w3.org/2000/svg" font-family="Avenir Next, Helvetica, sans-serif" font-size="10.6" fill="#000">
+  <defs><marker id="br" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#000"/></marker></defs>
+  <rect x="462" y="6" width="292" height="36" fill="#fff" stroke="#000" stroke-dasharray="4 3"/>
+  <text x="472" y="21">Checked against phoneticians' labels (kappa);</text><text x="472" y="35">calibration kept only if it helps on unseen speakers</text>
+  <line x1="662" y1="42" x2="662" y2="68" stroke="#000" stroke-dasharray="4 3" marker-end="url(#br)"/>
+  <g fill="#fff" stroke="#000">
+    <rect x="10" y="70" width="170" height="66"/><rect x="200" y="70" width="170" height="66"/><rect x="390" y="70" width="170" height="66" stroke-width="2.2"/><rect x="580" y="70" width="170" height="66"/>
+    <rect x="580" y="172" width="170" height="66"/><rect x="390" y="172" width="170" height="66"/><rect x="200" y="172" width="170" height="66"/><rect x="10" y="172" width="170" height="66"/>
+  </g>
+  <g>
+    <text x="20" y="89" font-weight="700">1. Input</text><text x="20" y="105">target words, recordings,</text><text x="20" y="120">tenet ranking</text>
+    <text x="210" y="89" font-weight="700">2. Find the words</text><text x="210" y="105">transcript: letter aligner</text><text x="210" y="120">podcast: Whisper small</text>
+    <text x="400" y="89" font-weight="700">3. Who said it (new)</text><text x="400" y="105">speaker separation, ECAPA;</text><text x="400" y="120">anonymous S1, S2, …</text>
+    <text x="590" y="89" font-weight="700">4. Which variant</text><text x="590" y="105">phone model scores <tspan class="ipa">[θɪŋk]</tspan>,</text><text x="590" y="120"><tspan class="ipa">[tɪŋk]</tspan>, <tspan class="ipa">[sɪŋk]</tspan>… per token</text>
+    <text x="590" y="191" font-weight="700">5. Count</text><text x="590" y="207">a variant competes with at</text><text x="590" y="222">least 3 tokens from 2 speakers</text>
+    <text x="400" y="191" font-weight="700">6. Six tenets</text><text x="400" y="207">marks from data, dictionaries,</text><text x="400" y="222">PHOIBLE, a knowledge base</text>
+    <text x="210" y="191" font-weight="700">7. Operability table</text><text x="210" y="207">strict domination, as in OT;</text><text x="210" y="222">tiers: standard, allophone, outer</text>
+    <text x="20" y="191" font-weight="700">8. Preferred form</text><text x="20" y="207">and how stable it is when</text><text x="20" y="222">speakers are resampled</text>
+  </g>
+  <g stroke="#000" fill="none" marker-end="url(#br)">
+    <line x1="180" y1="103" x2="198" y2="103"/><line x1="370" y1="103" x2="388" y2="103"/><line x1="560" y1="103" x2="578" y2="103"/>
+    <line x1="665" y1="136" x2="665" y2="170"/>
+    <line x1="580" y1="205" x2="562" y2="205"/><line x1="390" y1="205" x2="372" y2="205"/><line x1="200" y1="205" x2="182" y2="205"/>
+  </g>
+</svg>
+<figcaption>Figure 2. The full cycle as it runs now. Every step is in <code>backend/pg/</code>; the web page, the API and the command line run the same code.</figcaption>
+</figure>
+<h3>The models</h3>
+<table>
+<tr><th>Job</th><th>Model</th><th>Why this one</th></tr>
+<tr><td>Hear which variant was said</td><td><code>facebook/wav2vec2-xlsr-53-espeak-cv-ft</code></td><td>A phone recogniser trained on many languages, so it can hear <span class="ipa">[t]</span> against <span class="ipa">[θ]</span>, not just English words. It compares candidate pronunciations of the word against the audio.</td></tr>
+<tr><td>Find each word in a sentence</td><td><code>facebook/wav2vec2-base-960h</code></td><td>Lines a known transcript up with the audio, letter by letter.</td></tr>
+<tr><td>Find words in podcasts</td><td><code>openai/whisper-small</code></td><td>Writes a transcript with word times; each hit is then re-aligned. It also searches look-alike words (<i>tree</i> for <i>three</i>).</td></tr>
+<tr><td>Tell the speakers apart</td><td><code>speechbrain/spkrec-ecapa-voxceleb</code></td><td>Speaker fingerprints for short stretches of speech, grouped into speakers (section 6).</td></tr>
+</table>
+
+<h2>6. Results</h2>
+<h3>How well it hears each sound</h3>
+<p>The only free Nigerian English recordings with pronunciations transcribed by trained phoneticians are 22 speakers in the Speech Accent Archive, all reading the same paragraph: 753 test tokens. The fairest single number is kappa, agreement beyond chance. A model that always answers the commonest variant scores 0, however good its accuracy looks.</p>
+<table>
+<tr><th>Sound</th><th>Tokens</th><th>Accuracy</th><th>Always guess the commonest</th><th>Kappa</th><th>Status</th></tr>
+<tr><td class="ipa">&lt;th&gt; /θ/ (think)</td><td>85</td><td>82%</td><td>58%</td><td>0.68</td><td>Validated</td></tr>
+<tr><td class="ipa">&lt;th&gt; /ð/ (this), calibrated</td><td>129</td><td>81%</td><td>53%</td><td>0.64</td><td>Validated</td></tr>
+<tr><td>KIT (bring, six)</td><td>112</td><td>81%</td><td>76%</td><td>0.55</td><td>Validated</td></tr>
+<tr><td>NURSE (her)</td><td>86</td><td>43%</td><td>41%</td><td>0.23</td><td>Not validated</td></tr>
+<tr><td>GOAT (go, snow)</td><td>68</td><td>72%</td><td>87%</td><td>0.16</td><td>Not validated</td></tr>
+<tr><td>FACE (snake, train)</td><td>89</td><td>54%</td><td>72%</td><td>0.13</td><td>Not validated</td></tr>
+<tr><td>FLEECE (please, meet)</td><td>183</td><td>90%</td><td>92%</td><td>0.06</td><td>Not validated</td></tr>
+</table>
+<p>An independent reviewer was asked to break this work, not defend it. It found two fake calibrations (GOAT and FACE gave every token the same answer), a weak test ("same preferred form as the experts"), a phone model that leans towards dictionary forms (it hears Nigerian <span class="ipa">[d]</span> as <span class="ipa">[ð]</span> far more often than the reverse), and several bugs. All are fixed or stated plainly: calibration is now kept only when kappa rises on speakers it was not fitted on, which leaves voiced <span class="ipa">&lt;th&gt;</span> alone.</p>
+<h3>What it found in Nigerian speech</h3>
+<p>On 1,519 sentences from Google's Nigerian English corpus (31 speakers):</p>
+<table>
+<tr><th>Sound</th><th>Variant shares</th><th>Preferred (Ugorji's ranking)</th></tr>
+<tr><td class="ipa">&lt;th&gt; /θ/, 618 tokens</td><td class="ipa">θ 52%, t 36%, d 5%, s 4%, f 2%. Word-initially θ 48% and stops 48%, close to ICE-Nigeria (θ 47%, t 49%).</td><td class="ipa">[θ], in 100% of resamples</td></tr>
+<tr><td class="ipa">&lt;th&gt; /ð/, 925 tokens</td><td class="ipa">d 57%, ð 40% once the model's bias is corrected</td><td class="ipa">[ð] (99%); <i>d</i> loses on Disambiguity, not on the data</td></tr>
+<tr><td>NURSE, 676 tokens (not validated)</td><td class="ipa">ɜː 36%, ɛ 22%, ɔ 17%, a 15%, e 8%; the model still leans to the dictionary vowel</td><td class="ipa">[ɜː]</td></tr>
+</table>
+<h3>Speaker separation</h3>
+<p>PG counts speakers, not files. The tool now cuts speech into 1.5-second windows, takes a speaker fingerprint of each with ECAPA, removes what all the fingerprints share (room, microphone, language), averages each window with its neighbours, groups them into speakers, and credits every target word to the person speaking at that moment. It was tested on made-up 4-minute panels of 2 to 5 real SLR70 Nigerian speakers, including three and four women together. The first model tried (WavLM) credited only 71% of words correctly for four women, even when told how many there were. ECAPA was tuned on 4 conversations, then tested on 8 it had never seen.</p>
+<table>
+<tr><th>Test</th><th>Result</th></tr>
+<tr><td>Held out: 8 conversations, 2 to 5 speakers</td><td>right number of speakers in 8 of 8; 100% of sampled words credited to the right speaker</td></tr>
+<tr><td>Live server: a 63-second, 3-speaker conversation</td><td>3 speakers found; 5 of 5 target words credited right; 48 seconds</td></tr>
+</table>
+<p>The test is kinder than a real podcast: each clip was recorded separately, so microphone differences help, and the speakers come from the same pool of 31.</p>
+<h3>Live deployment</h3>
+<p>The tool is live at <code>https://thebickersteth-voxpreference.hf.space</code> on Hugging Face's free CPU hardware (2 cores, 16 GB). New Docker Spaces have needed a paid plan since mid-2026; ours existed before that and keeps the free hardware, so it must not be deleted. The account has no payment method and cannot be charged. Twelve SLR70 clips from 6 speakers ran in 18 seconds (6 <span class="ipa">[θ]</span>, 4 <span class="ipa">[t]</span>, <span class="ipa">[θ]</span> preferred). A free Space sleeps after 48 hours without visitors and wakes in a minute or two.</p>
+<h3>Podcast test</h3>
+<p id="podcast">Results pending. A 43-minute Nigerian panel podcast with four hosts, two men and two women, is being analysed for every sound, once with Ugorji's ranking and once with Frequency first. The results go here when the run finishes.</p>
+
+<h2>7. The tenets, and Ugorji's table as the tool prints it</h2>
+<p>No PG source gives an algorithm; in the published tables the marks are the analyst's judgement. The rules below are our proposal, chosen so that both of Ugorji's evaluations come out exactly right. They are defaults the PG experts can change, not PG's own verdicts.</p>
+<table>
+<tr><th>Tenet</th><th>A variant gets a mark when</th><th>Evidence</th></tr>
+<tr><td>International acceptance</td><td>it is not an accepted international norm for the sound (for <span class="ipa">/θ/</span>: <span class="ipa">θ, t, t̪, f</span> are; <span class="ipa">s, z</span> are not)</td><td>knowledge base: RP and GA, established L1 varieties, the Lingua Franca Core</td></tr>
+<tr><td>Contrastiveness</td><td>it merges a contrast that matters for international intelligibility</td><td>Lingua Franca Core</td></tr>
+<tr><td>Frequency</td><td>its share is under 20%, or, in "most frequent" mode, it is not the commonest variant</td><td>the recordings</td></tr>
+<tr><td>Disambiguity</td><td>it makes common words sound alike (<i>three</i> and <i>tree</i>)</td><td>pronouncing dictionaries and word frequency</td></tr>
+<tr><td>Phonetic simplicity</td><td>it is missing from most of Hausa, Igbo and Yoruba, or rare in the world's languages</td><td>PHOIBLE</td></tr>
+<tr><td>Pedagogic convenience</td><td>it is missing from those languages and rarely used by the speakers analysed</td><td>PHOIBLE and the recordings</td></tr>
+</table>
+<figure>
+<table class="tab">
+<tr><th>&lt;th&gt; in <i>think</i></th><th>Share</th><th>I-Ac</th><th>ContR</th><th>FreQ</th><th>DisaM</th><th>Pho-S</th><th>Ped-C</th><th>Tier</th></tr>
+<tr><td class="ipa">a. tɪŋk</td><td>48.8%</td><td></td><td></td><td></td><td>*!</td><td class="dead"></td><td class="dead"></td><td>allophone</td></tr>
+<tr><td class="ipa">b. ☞ θɪŋk</td><td>47.2%</td><td></td><td></td><td></td><td></td><td>*</td><td></td><td>preferred</td></tr>
+<tr><td class="ipa">c. sɪŋk</td><td>4.0%</td><td>*!</td><td class="dead"></td><td class="dead">*</td><td class="dead">*</td><td class="dead"></td><td class="dead"></td><td>outer norm</td></tr>
+<tr><td class="ipa">d. zɪŋk</td><td>0.0%</td><td>*!</td><td class="dead"></td><td class="dead">*</td><td class="dead">*</td><td class="dead"></td><td class="dead"></td><td>outer norm</td></tr>
+</table>
+<figcaption>Figure 3. Ugorji's <i>think</i> evaluation as the tool produces it, with his default ranking: the same marks and the same winner as his slide. Shares are word-initial <span class="ipa">/θ/</span> in ICE-Nigeria (Oyebola, Ho &amp; Li 2019). The reasons the tool gives: <span class="ipa">[t]</span> makes 78 common word pairs sound alike (<i>bath</i>/<i>bat</i>), <span class="ipa">[θ]</span> is absent from Hausa, Igbo and Yoruba, and <span class="ipa">[s]</span> and <span class="ipa">[z]</span> are outside the international norms. Shaded cells no longer matter once a fatal mark (!) is given.</figcaption>
+</figure>
+<h3>What "rank by frequency" means</h3>
+<p>Most users read "Frequency first" as "the commonest pronunciation wins": if <i>think</i> came out with <span class="ipa">[θ]</span> 49 times and that was the most, <span class="ipa">[θ]</span> is preferred. Ugorji's <i>think</i> table only comes out right under another reading, where Frequency removes rare variants (under 20%), because in his Nigerian data <span class="ipa">[t]</span> is slightly more common than <span class="ipa">[θ]</span>. Both readings are in the tool. The default follows Ugorji.</p>
+
+<h2>8. Questions for Prof. Ugorji</h2>
+<ul>
+  <li>Which norms count as international, and why <span class="ipa">[t]</span> escapes that mark in <i>think</i> while <span class="ipa">[s]</span> does not.</li>
+  <li>What Frequency means: a threshold or "the commonest wins"; per token or per speaker; over whose speech. This alone can flip <i>think</i> to <span class="ipa">[t]</span>.</li>
+  <li>What separates Contrastiveness from Disambiguity, and what counts as evidence for Pedagogic convenience. The full list of 10 is in <code>backend/pg/RESEARCH.md</code>, section 6.</li>
+</ul>
+
+<h2>9. Next steps</h2>
+<ol>
+  <li>Label 150 to 300 new Nigerian tokens, ideally twice, with the listening tool (<code>python -m pg.review</code>). This turns the vowels from not validated to validated.</li>
+  <li>Take the questions above to Prof. Ugorji before presenting automated tables as PG results.</li>
+  <li>Add the podcast results and check the speaker separation against the known four-person panel.</li>
+  <li>Try a stronger model for vowels: the Montreal Forced Aligner's English model, trained partly on Nigerian English, or formant measurements.</li>
+  <li>Finish the single repository with deploy on push and the daily keep-awake visit.</li>
+</ol>
+<p class="sharp">The method works where it has been checked. The next work is checking more of it.</p>
+</body>
+</html>
