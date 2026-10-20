@@ -4,6 +4,7 @@ import Header from "../components/Header.jsx";
 import Footer from "../components/Footer.jsx";
 import ProgressBar from "../components/ProgressBar.jsx";
 import Audio from "../assets/Audio.svg";
+import { getEvidenceFiles, setEvidenceFiles } from "../evidenceStore.js";
 
 function formatFileSize(bytes) {
   if (!bytes) return "0 KB";
@@ -11,14 +12,16 @@ function formatFileSize(bytes) {
 }
 
 export default function UploadPage() {
-  const [audioFiles, setAudioFiles] = useState([]);
+  const [audioFiles, setAudioFiles] = useState(getEvidenceFiles);
   const [error, setError] = useState("");
   const fileInputRef = useRef();
   const navigate = useNavigate();
 
   function acceptFiles(files) {
     const selected = Array.from(files || []);
-    const invalid = selected.find((file) => !file.type.startsWith("audio/"));
+    const invalid = selected.find(
+      (file) => !file.type.startsWith("audio/") && !/\.(wav|mp3|m4a|flac|ogg|webm|aac)$/i.test(file.name)
+    );
     if (invalid) {
       setError("Only audio files can be attached as evidence.");
       return;
@@ -35,6 +38,7 @@ export default function UploadPage() {
       size: file.size,
     }));
     sessionStorage.setItem("audioEvidence", JSON.stringify(evidence));
+    setEvidenceFiles(audioFiles);
     navigate("/target-word");
   }
 
@@ -51,8 +55,9 @@ export default function UploadPage() {
                 Attach Speech Evidence
               </h1>
               <p className="text-gray-600">
-                Audio is optional in this MVP. Use it as source evidence, then enter the
-                observed IPA pronunciation variants on the next screen.
+                Attach recordings of the target word, voice notes, or longer speech such as
+                a podcast. On the next screen the tool can find the pronunciation variants in
+                the audio for you, or you can enter them by hand. Audio is optional.
               </p>
             </div>
           </div>
@@ -120,6 +125,7 @@ export default function UploadPage() {
               className="bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
               onClick={() => {
                 sessionStorage.setItem("audioEvidence", "[]");
+                setEvidenceFiles([]);
                 navigate("/target-word");
               }}
             >

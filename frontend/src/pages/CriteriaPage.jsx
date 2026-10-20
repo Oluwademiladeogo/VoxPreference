@@ -115,7 +115,9 @@ export default function CriteriaPage() {
             <p className="text-gray-600 mt-1">
               Default order follows the presentation: IA, Contrastiveness, Frequency,
               Disambiguity, Phonetic Simplicity, then Pedagogic Convenience. Move sliders
-              to model a different policy or classroom priority.
+              to model a different policy or classroom priority. Only the order matters:
+              a higher tenet always outranks a lower one, equal sliders are ranked together,
+              and 0 leaves a tenet out.
             </p>
           </div>
 

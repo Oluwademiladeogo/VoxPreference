@@ -181,9 +181,25 @@ def pg_analyze(
     return body
 
 
-# PG2 scoring of attested variants (Ebube's engine from FULL_PG_TOOL: backend/pg2), used by the PG2 pages
+# The PG2 pages' attested variants: PG2's checks and validation summary (Ebube's engine from FULL_PG_TOOL:
+# backend/pg2), then the preferred form by Ugorji's strict ranking (pg/pg2_bridge.py)
 MAX_JSON_BYTES = 25 * 1024 * 1024
 MAX_CSV_BYTES = 1024 * 1024
+_strict = None
+
+
+def strict_scored(payload: dict, weighted: dict) -> JSONResponse:
+    global _strict
+    if not weighted.get("success"):
+        return JSONResponse(status_code=400, content=weighted)
+    try:
+        with _analyzer_lock:
+            if _strict is None:
+                from pg.pg2_bridge import StrictScorer
+                _strict = StrictScorer()
+        return JSONResponse(status_code=200, content=_strict.score(payload, weighted))
+    except ValueError as e:
+        return JSONResponse(status_code=400, content={"success": False, "errors": [str(e)]})
 
 
 @app.post("/preference/analyze")
@@ -197,8 +213,9 @@ async def preference_analyze(request: Request):
         payload = json.loads(raw)
     except ValueError as e:
         return JSONResponse(status_code=400, content={"success": False, "errors": [f"Invalid JSON payload: {e}"]})
-    result = analyze_preference_grammar(payload)
-    return JSONResponse(status_code=200 if result.get("success") else 400, content=result)
+    if not isinstance(payload, dict):
+        return JSONResponse(status_code=400, content={"success": False, "errors": ["JSON payload must be an object."]})
+    return strict_scored(payload, analyze_preference_grammar(payload))
 
 
 @app.post("/preference/analyze-csv")
@@ -221,7 +238,7 @@ async def preference_analyze_csv(annotationFile: UploadFile = File(...), sliders
         return JSONResponse(status_code=400, content={"success": False, "errors": [f"Invalid sliders_json: {e}"]})
     result = analyze_preference_grammar(payload)
     result["annotationSummary"] = payload.get("annotation_summary")
-    return JSONResponse(status_code=200 if result.get("success") else 400, content=result)
+    return strict_scored(payload, result)
 
 
 # the built frontend; any other path is a page of the single-page app (/upload, /results, ...)

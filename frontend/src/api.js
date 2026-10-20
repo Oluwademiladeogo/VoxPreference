@@ -44,3 +44,8 @@ export async function fetchJson(path, options = {}) {
     window.clearTimeout(timeout);
   }
 }
+
+// Analyses of audio take minutes (long recordings much longer), so they get a longer timeout.
+export function postForm(path, formData, timeoutMs = 30 * 60 * 1000) {
+  return fetchJson(path, { method: "POST", body: formData, timeoutMs });
+}

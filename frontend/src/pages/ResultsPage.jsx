@@ -22,6 +22,30 @@ const columns = [
   ["weighted_score", "Weighted"],
 ];
 
+// Strict ranking (Ugorji): each tenet column holds violation marks ("*", "!" = the fatal one), in ranked order
+const STRICT_LABELS = {
+  "I-Ac": ["international_acceptance", "IA"],
+  ContR: ["contrastiveness", "CO"],
+  FreQ: ["frequency", "F"],
+  DisaM: ["disambiguity", "DI"],
+  "Pho-S": ["phonetic_simplicity", "PS"],
+  "Ped-C": ["pedagogic_convenience", "PC"],
+};
+
+function columnsFor(results) {
+  if (results?.scoring !== "strict") return columns;
+  const ranked = Object.keys(results.tenetNames || {}).map((tenet) => STRICT_LABELS[tenet]);
+  return [
+    ["ipa", "IPA"],
+    ["sound", "Sound"],
+    ["count", "Count"],
+    ["source_type", "Source"],
+    ["validated", "Validated"],
+    ...ranked,
+    ["outcome", "Outcome"],
+  ];
+}
+
 function formatValue(value) {
   if (typeof value === "boolean") {
     return value ? "Yes" : "No";
@@ -57,13 +81,19 @@ export default function ResultsPage() {
     doc.setFontSize(11);
     doc.text(`Target word: ${results.targetWord}`, 14, 28);
     doc.text(`Recommended pronunciation: ${results.bestTranscription}`, 14, 36);
-    doc.text(`Weighted score: ${formatValue(results.weightedScore)}`, 14, 44);
+    doc.text(
+      results.scoring === "strict"
+        ? `Ranking: ${results.ranking}`
+        : `Weighted score: ${formatValue(results.weightedScore)}`,
+      14,
+      44
+    );
 
     autoTable(doc, {
       startY: 52,
-      head: [columns.map(([, label]) => label)],
+      head: [columnsFor(results).map(([, label]) => label)],
       body: (results.tableRows || []).map((row) =>
-        columns.map(([key]) => formatValue(row[key]))
+        columnsFor(results).map(([key]) => formatValue(row[key]))
       ),
       theme: "grid",
       styles: { fontSize: 9 },
@@ -144,12 +174,22 @@ export default function ResultsPage() {
           )}
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="bg-indigo-50 rounded-lg p-4 border border-indigo-100">
-              <p className="text-sm text-indigo-700 font-semibold">Weighted Score</p>
-              <p className="text-3xl font-bold text-indigo-900">
-                {formatValue(results.weightedScore)}
-              </p>
-            </div>
+            {results.scoring === "strict" ? (
+              <div className="bg-indigo-50 rounded-lg p-4 border border-indigo-100">
+                <p className="text-sm text-indigo-700 font-semibold">Ranking</p>
+                <p className="text-base font-semibold text-indigo-900">{results.ranking}</p>
+                <p className="text-sm text-indigo-800 mt-1">
+                  Sound under study: {results.sound?.label} /{results.sound?.phoneme}/
+                </p>
+              </div>
+            ) : (
+              <div className="bg-indigo-50 rounded-lg p-4 border border-indigo-100">
+                <p className="text-sm text-indigo-700 font-semibold">Weighted Score</p>
+                <p className="text-3xl font-bold text-indigo-900">
+                  {formatValue(results.weightedScore)}
+                </p>
+              </div>
+            )}
             <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
               <p className="text-sm text-gray-600 font-semibold">Scoring Method</p>
               <p className="text-lg font-semibold text-gray-900">{results.method}</p>
@@ -192,7 +232,7 @@ export default function ResultsPage() {
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  {columns.map(([, label]) => (
+                  {columnsFor(results).map(([, label]) => (
                     <th
                       key={label}
                       className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase"
@@ -201,20 +241,22 @@ export default function ResultsPage() {
                     </th>
                   ))}
                   <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">
-                    Unmet Tenets
+                    {results.scoring === "strict" ? "Why marked" : "Unmet Tenets"}
                   </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {(results.tableRows || []).map((row, index) => (
                   <tr key={row.ipa} className={index === 0 ? "bg-indigo-50" : ""}>
-                    {columns.map(([key]) => (
+                    {columnsFor(results).map(([key]) => (
                       <td key={key} className="px-4 py-3 text-sm text-gray-700">
                         {formatValue(row[key])}
                       </td>
                     ))}
                     <td className="px-4 py-3 text-sm text-gray-700">
-                      {row.unmet_tenets?.length ? row.unmet_tenets.join(", ") : "None"}
+                      {row.unmet_tenets?.length
+                        ? row.unmet_tenets.join(results.scoring === "strict" ? "; " : ", ")
+                        : "None"}
                     </td>
                   </tr>
                 ))}
@@ -222,6 +264,16 @@ export default function ResultsPage() {
             </table>
           </div>
 
+          {results.scoring === "strict" && (
+            <p className="text-sm text-gray-600">
+              Strict ranking, as in Prof. Ugorji&apos;s Preference Grammar: a form is out as soon as it has
+              more marks than a rival on the highest tenet where they differ (! marks the fatal one);
+              lower tenets only break ties. The slider order sets the ranking; equal sliders are pooled
+              and a slider at 0 leaves the tenet out.
+            </p>
+          )}
+
+          {results.weights && (
           <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
             <h2 className="font-semibold text-gray-900">Weighting</h2>
             <div className="grid grid-cols-2 md:grid-cols-6 gap-3 mt-3">
@@ -235,6 +287,7 @@ export default function ResultsPage() {
               ))}
             </div>
           </div>
+          )}
         </section>
       </main>
       <Footer />
