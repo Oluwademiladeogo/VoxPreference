@@ -1,7 +1,7 @@
 import numpy as np
 import torch
 
-from pg.align import WordAligner, words_of
+from pg.align import WordAligner, WordSpan, words_of
 
 
 class FakeOut:
@@ -46,3 +46,16 @@ def test_long_audio_frames_stay_in_place():
 
 def test_words_of_normalises_transcripts():
     assert words_of("Ask her: ‘Bring THESE things!’ 123") == ["ask", "her", "bring", "these", "things"]
+
+
+def test_whisper_repetition_loops_and_empty_words_are_dropped():
+    from pg.asr import drop_loops
+
+    def spans(text, dur=0.3):
+        return [WordSpan(w, i * 0.4, i * 0.4 + dur, 1.0) for i, w in enumerate(text.split())]
+
+    loop = spans("so i like this " + "i like this " * 20 + "and then")
+    kept = [w.word for w in drop_loops(loop)]
+    assert kept == "so i like this and then".split()
+    assert [w.word for w in drop_loops(spans("no no no really"))] == "no no no really".split()  # 3 is allowed
+    assert drop_loops(spans("think", dur=0.0)) == []

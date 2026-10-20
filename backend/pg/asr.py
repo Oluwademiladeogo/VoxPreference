@@ -39,7 +39,7 @@ class Transcriber:
         key = hashlib.sha1(np.ascontiguousarray(audio, dtype=np.float32).tobytes()).hexdigest()[:20]
         cache = CACHE_DIR / f"{self.model_id.replace('/', '_')}_{key}.json"
         if cache.exists():
-            return [WordSpan(**w) for w in json.loads(cache.read_text(encoding="utf-8"))]
+            return drop_loops([WordSpan(**w) for w in json.loads(cache.read_text(encoding="utf-8"))])
         spans = self._transcribe(audio, progress=cache.with_suffix(".partial.jsonl"))
         try:
             cache.parent.mkdir(parents=True, exist_ok=True)
@@ -47,7 +47,7 @@ class Transcriber:
             cache.with_suffix(".partial.jsonl").unlink(missing_ok=True)
         except OSError:
             pass
-        return spans
+        return drop_loops(spans)
 
     def _transcribe(self, audio: np.ndarray, window_s: float = 30.0, overlap_s: float = 2.0,
                     progress: Path | None = None) -> list[WordSpan]:
@@ -102,6 +102,33 @@ class Transcriber:
             for w in words_of(chunk["text"]):
                 words.append([w, float(start), float(end if end is not None else start + 0.3)])
         return words
+
+
+def drop_loops(spans: list[WordSpan], max_repeats: int = 3, max_n: int = 8) -> list[WordSpan]:
+    """Remove Whisper's repetition loops and words with no duration. On long conversational audio Whisper can
+    get stuck repeating a phrase ("i like this" x103), inventing words that were never said; a word or phrase
+    of 1-8 words repeated more than max_repeats times in a row keeps only its first occurrence."""
+    words = [w for w in spans if w.end - w.start > 0.01]
+    keep = [True] * len(words)
+    i = 0
+    while i < len(words):
+        jumped = False
+        for n in range(1, max_n + 1):
+            gram = [w.word for w in words[i:i + n]]
+            if len(gram) < n:
+                break
+            reps = 1
+            while [w.word for w in words[i + reps * n:i + (reps + 1) * n]] == gram:
+                reps += 1
+            if reps > max_repeats:
+                for k in range(i + n, i + reps * n):
+                    keep[k] = False
+                i += reps * n
+                jumped = True
+                break
+        if not jumped:
+            i += 1
+    return [w for w, k in zip(words, keep) if k]
 
 
 def find_targets(audio: np.ndarray, asr_words: list[WordSpan], targets: set[str], aligner: WordAligner,

@@ -133,3 +133,15 @@ How do we move forward? Plus the podcast results.
   block only, outlined). No HMM-GMM/Kaldi. Black and white. 10 pages. Podcast section placeholder.
 - Dependabot: many alerts from pinned torch 2.2.2 / transformers 4.51.3 (Intel-Mac pins) and python-multipart;
   the deployed image is Linux and could use newer pins (needs transformers 5 / torch 2.6+ validation in CI).
+
+## 20 Oct afternoon: PG2 brought into THIS repo (user's direction)
+- "PG2 / full PG" = github.com/ebube005/FULL_PG_TOOL (local ~/Documents/projects/FULL_PG_TOOL). The user wants
+  ONE repo = this VoxPreference repo, built on PG2's frontend. Its frontend is now frontend/ here (VoxPreference-
+  frontend removed); Ebube's pg_core.py + validation_import.py in backend/pg2/; templates/, scripts/, docs/pg2/.
+- Scoring: user chose the new engine. /preference/analyze(-csv) run PG2's checks, then pg/pg2_bridge.py picks
+  the preferred form by Ugorji's strict ranking (slider order = ranking; equal pooled; 0 deletes). Variants that
+  don't line up with one sound fall back to PG2's weighted method with a warning.
+- Variants page: "Find Variants in the Audio" (single-word clips or longer speech + speaker separation) fills the
+  table with source "auto", unvalidated. Results page shows marks/outcome/why. Verified live end to end
+  (3-speaker SLR70 mix: 2 think tokens, 3 speakers found, θɪŋk preferred, tɪŋk out at DisaM).
+- Bug found live and fixed: cluster.two_level silhouette crashed with 2 tokens of 2 variants.
