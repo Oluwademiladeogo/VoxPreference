@@ -3,9 +3,9 @@
 
 FROM node:22-slim AS frontend
 WORKDIR /frontend
-COPY VoxPreference-frontend/package.json VoxPreference-frontend/package-lock.json ./
+COPY frontend/package.json frontend/package-lock.json ./
 RUN npm ci
-COPY VoxPreference-frontend/ ./
+COPY frontend/ ./
 RUN npm run build
 
 FROM python:3.12-slim
@@ -15,7 +15,7 @@ WORKDIR /app/backend
 COPY backend/requirements.txt ./
 RUN pip install --no-cache-dir --extra-index-url https://download.pytorch.org/whl/cpu -r requirements.txt
 COPY backend/ ./
-COPY --from=frontend /frontend/dist /app/VoxPreference-frontend/dist
+COPY --from=frontend /frontend/dist /app/frontend/dist
 # lexicons and models are fetched at build time so the first analysis does not wait for downloads
 ENV HF_HOME=/app/hf
 RUN python -m pg.kb.fetch && python -c "from pg.phones import PhoneModel; from pg.align import WordAligner; from pg.diarize import Diarizer; from huggingface_hub import snapshot_download; from pg.asr import ASR_MODEL; PhoneModel(); WordAligner(); Diarizer(); snapshot_download(ASR_MODEL, allow_patterns=['*.json', '*.txt', 'model.safetensors'])"

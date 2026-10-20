@@ -1,3 +1,5 @@
 .DS_Store
 data/
 __pycache__/
+.impeccable/
+frontend/.impeccable/

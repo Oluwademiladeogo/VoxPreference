@@ -5,8 +5,8 @@ from typing import List, Optional
 import json
 import os
 from pathlib import Path
-from fastapi import FastAPI, File, Form, UploadFile
-from fastapi.responses import JSONResponse
+from fastapi import FastAPI, File, Form, Request, UploadFile
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 import io
@@ -48,7 +48,7 @@ def get_asr():
         _asr = (processor, model)
     return _asr
 
-FRONTEND_DIST = Path(os.environ.get("FRONTEND_DIST", Path(__file__).resolve().parents[1] / "VoxPreference-frontend" / "dist"))
+FRONTEND_DIST = Path(os.environ.get("FRONTEND_DIST", Path(__file__).resolve().parents[1] / "frontend" / "dist"))
 
 
 if not FRONTEND_DIST.is_dir():
@@ -181,6 +181,57 @@ def pg_analyze(
     return body
 
 
-# the built frontend (npm run build) is served from the same address as the API, so one process is the whole app
+# PG2 scoring of attested variants (Ebube's engine from FULL_PG_TOOL: backend/pg2), used by the PG2 pages
+MAX_JSON_BYTES = 25 * 1024 * 1024
+MAX_CSV_BYTES = 1024 * 1024
+
+
+@app.post("/preference/analyze")
+async def preference_analyze(request: Request):
+    from pg2.pg_core import analyze_preference_grammar
+
+    raw = await request.body()
+    if len(raw) > MAX_JSON_BYTES:
+        return JSONResponse(status_code=413, content={"success": False, "errors": ["Request is too large."]})
+    try:
+        payload = json.loads(raw)
+    except ValueError as e:
+        return JSONResponse(status_code=400, content={"success": False, "errors": [f"Invalid JSON payload: {e}"]})
+    result = analyze_preference_grammar(payload)
+    return JSONResponse(status_code=200 if result.get("success") else 400, content=result)
+
+
+@app.post("/preference/analyze-csv")
+async def preference_analyze_csv(annotationFile: UploadFile = File(...), sliders_json: Optional[str] = Form(None)):
+    from pg2.pg_core import analyze_preference_grammar
+    from pg2.validation_import import aggregate_annotation_rows, rows_from_csv
+
+    raw = await annotationFile.read(MAX_CSV_BYTES + 1)
+    if len(raw) > MAX_CSV_BYTES:
+        return JSONResponse(status_code=413, content={"success": False, "errors": ["CSV is too large. Limit is 1024 KB."]})
+    try:
+        payload = aggregate_annotation_rows(rows_from_csv(io.StringIO(raw.decode("utf-8-sig"))))
+        if not payload.get("success"):
+            return JSONResponse(status_code=400, content=payload)
+        if sliders_json:
+            payload["sliders"] = json.loads(sliders_json)
+    except UnicodeDecodeError as e:
+        return JSONResponse(status_code=400, content={"success": False, "errors": [f"CSV must be UTF-8: {e}"]})
+    except ValueError as e:
+        return JSONResponse(status_code=400, content={"success": False, "errors": [f"Invalid sliders_json: {e}"]})
+    result = analyze_preference_grammar(payload)
+    result["annotationSummary"] = payload.get("annotation_summary")
+    return JSONResponse(status_code=200 if result.get("success") else 400, content=result)
+
+
+# the built frontend; any other path is a page of the single-page app (/upload, /results, ...)
 if FRONTEND_DIST.is_dir():
-    app.mount("/", StaticFiles(directory=FRONTEND_DIST, html=True), name="frontend")
+    if (FRONTEND_DIST / "assets").is_dir():
+        app.mount("/assets", StaticFiles(directory=FRONTEND_DIST / "assets"), name="assets")
+
+    @app.get("/{full_path:path}")
+    def serve_page(full_path: str):
+        requested = (FRONTEND_DIST / full_path).resolve()
+        if requested.is_file() and FRONTEND_DIST.resolve() in requested.parents:
+            return FileResponse(requested)
+        return FileResponse(FRONTEND_DIST / "index.html")

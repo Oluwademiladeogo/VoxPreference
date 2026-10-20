@@ -13,11 +13,12 @@ pronounced the sound, counts the variants, and returns the operability table and
 | `backend/pg/` | The pipeline: finding the words, scoring pronunciations, speaker separation, the six tenets, the operability table. Details in `backend/pg/README.md`; sources and open questions in `backend/pg/RESEARCH.md`. |
 | `backend/eval/` | How it was tested: phoneticians' labels (Speech Accent Archive), SLR70, the speaker-separation test. |
 | `backend/tests/` | Automatic tests; `test_models.py` runs the real models on six Nigerian recordings. |
-| `backend/app.py` | The API (`/pg/units`, `/pg/analyze`), which also serves the web page. |
-| `VoxPreference-frontend/` | The web page (React). |
+| `backend/app.py` | The API (`/preference/analyze`, `/preference/analyze-csv` for the PG2 pages; `/pg/units`, `/pg/analyze` for audio), which also serves the web page. |
+| `frontend/` | The web app: the PG2 pages from FULL_PG_TOOL (Evidence → Variants → Tenets → Results). |
+| `backend/pg2/`, `templates/`, `scripts/`, `docs/pg2/` | PG2's scoring of attested variants and expert-annotation CSV import (Ebube's engine from FULL_PG_TOOL), its annotation template, scripts and design notes. |
 | `docs/report/` | The project report (PDF and HTML). |
 | `Dockerfile`, `scripts/deploy_space.sh` | One image for the whole app, and the upload to Hugging Face. |
-| `backend/finetune_model.py`, `text_to_ipa.py` | The final-year-project transcription model (the "Transcription (legacy)" page). |
+| `backend/finetune_model.py`, `text_to_ipa.py` | The final-year-project transcription model (still served at `/transcribe`). |
 
 ## Run it on your machine
 
@@ -25,7 +26,7 @@ pronounced the sound, counts the variants, and returns the operability table and
 cd backend
 pip install --extra-index-url https://download.pytorch.org/whl/cpu -r requirements.txt   # Intel Mac: requirements-intel-mac.txt
 python -m pg.kb.fetch
-cd ../VoxPreference-frontend && npm ci && npm run build && cd ../backend
+cd ../frontend && npm ci && npm run build && cd ../backend
 uvicorn app:app --port 8000        # then open http://localhost:8000
 ```
 

@@ -1,0 +1,4 @@
+target_word,reference_ipa,ipa,count,source_type,reviewer,confidence,validated,label,notes
+think,θɪŋk,θɪŋk,4,expert,reviewer_1,1,true,international-like,expert reviewed example row
+think,θɪŋk,tɪŋk,9,expert,reviewer_1,1,true,alveolar stop,expert reviewed example row
+think,θɪŋk,sɪŋk,2,expert,reviewer_1,1,true,fricative replacement,expert reviewed example row

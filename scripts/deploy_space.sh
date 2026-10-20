@@ -13,7 +13,8 @@ PYTHON="${PYTHON:-$HOME/.venvs/voxpref/bin/python}"
 
 rm -rf "$OUT" && mkdir -p "$OUT"
 rsync -a --exclude data --exclude __pycache__ --exclude .pytest_cache "$ROOT/backend/" "$OUT/backend/"
-rsync -a --exclude node_modules --exclude dist "$ROOT/VoxPreference-frontend/" "$OUT/VoxPreference-frontend/"
+rsync -a "$ROOT/templates/" "$OUT/templates/"
+rsync -a --exclude node_modules --exclude dist "$ROOT/frontend/" "$OUT/frontend/"
 cp "$ROOT/Dockerfile" "$ROOT/.dockerignore" "$OUT/"
 cat > "$OUT/README.md" <<'EOF'
 ---
