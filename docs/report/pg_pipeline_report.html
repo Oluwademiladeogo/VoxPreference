@@ -335,9 +335,18 @@
 </table>
 <p>The test is kinder than a real podcast: each clip was recorded separately, so microphone differences help, and the speakers come from the same pool of 31.</p>
 <h3>Live deployment</h3>
-<p>The tool is live at <code>https://thebickersteth-voxpreference.hf.space</code> on Hugging Face's free CPU hardware (2 cores, 16 GB) [19]. New Docker Spaces have needed a paid plan since mid-2026 [19]; ours existed before that and keeps the free hardware, so it must not be deleted. The account has no payment method and cannot be charged. Twelve SLR70 clips from 6 speakers ran in 18 seconds (6 <span class="ipa">[θ]</span>, 4 <span class="ipa">[t]</span>, <span class="ipa">[θ]</span> preferred) (E9). A free Space sleeps after 48 hours without visitors and wakes in a minute or two [19].</p>
+<p>The tool is live at <code>https://thebickersteth-voxpreference.hf.space</code> on Hugging Face's free CPU hardware (2 cores, 16 GB) [19]. New Docker Spaces have needed a paid plan since mid-2026 [19]; ours existed before that and keeps the free hardware, so it must not be deleted. The account has no payment method and cannot be charged. Twelve SLR70 clips from 6 speakers ran in 18 seconds (6 <span class="ipa">[θ]</span>, 4 <span class="ipa">[t]</span>, <span class="ipa">[θ]</span> preferred) (E9). A free Space sleeps after 48 hours without visitors and wakes in a minute or two [19]. The web app is PG2's own pages (Evidence, Variants, Tenets, Results) from the full PG tool, with two additions: the Variants page can find the variants in attached audio, single words or long speech with speaker separation, and fills its table with them, marked automatic until a person validates them; and the Results page now chooses the preferred form by Ugorji's strict ranking, the slider order setting the ranking.</p>
 <h3>Podcast test</h3>
-<p id="podcast">Results pending. A 43-minute Nigerian panel podcast with four hosts, two men and two women, is being analysed for every sound, once with Ugorji's ranking and once with Frequency first. The results go here when the run finishes.</p>
+<p id="podcast">We tested the full path, audio to operability table, on a real Nigerian panel podcast: <i>Can a person love 2 people at the same time?</i> (The Frankly Speaking Podcast, now The Honest Bunch, Glitch Africa Studios; 43 minutes; four hosts, two men and two women, for the whole episode). The audio was used only for this analysis.</p>
+<p>The full-length runs, on this laptop, found three faults before they gave a result, and each is now fixed and covered by a test: Whisper crashed at the very end of transcribing (twice, after 95 and 77 minutes), so the tool now transcribes in 30-second pieces and saves each one; Whisper got stuck repeating phrases ("i like this" 103 times), inventing about a quarter of the transcript (8,602 words became 6,392 after the repeats were removed; <i>think</i> went from 68 hits to 25); and uploaded M4A files, the format of many phone voice notes, decoded to silence without an error. About seven minutes of the episode, in 13 stretches, produced no words; stretches of Yoruba and Pidgin came out as made-up English or nothing. The details are in <code>backend/data/work/podcast/PODCAST_TEST.md</code>.</p>
+<p>We then ran the first 10 minutes through the live app, telling it there were four speakers:</p>
+<table>
+<tr><th>Sound</th><th>Words found</th><th>What the speakers said</th><th>Preferred (Ugorji's ranking)</th><th>Stable in</th></tr>
+<tr><td>&lt;th&gt; /θ/ (<i>something, everything, thank</i> ...)</td><td>19</td><td>[θ] 37%, [t] 37%, [d] 21%, [s] 1 token</td><td>[θ]</td><td>97% of resamples</td></tr>
+<tr><td>&lt;th&gt; /ð/ (<i>that, this, they</i> ...)</td><td>73</td><td>[d] 78%, [ð] 10%, [z] 5%, [t], [θ], [v] rare</td><td>[d]</td><td>99% of resamples</td></tr>
+</table>
+<p>The voiced result differs from the read sentences of SLR70, where [ð] was preferred. In relaxed conversation these speakers said [d] almost eight times in ten, so [ð] falls below the Frequency threshold and loses before Disambiguity can protect it, exactly the way Ugorji's <i>think</i> table flips when [θ] is rare. That is the framework working as designed, and it shows the answer depends on whose speech is sampled and in what style.</p>
+<p>Two limits. One word in five (18 of 92) could not be credited to a speaker, because it fell in a stretch the speaker separation did not cover; those words still count for Frequency but not for the per-speaker checks. And ten minutes on the free hardware took 22 minutes to transcribe, so long recordings belong on the command line or a faster machine.</p>
 
 <h2>7. The tenets, and Ugorji's table as the tool prints it</h2>
 <p>No PG source gives an algorithm; the published marks are the analyst's judgement [4]. The rules below are our proposal, chosen so that both of Ugorji's evaluations [1, 3, 4] come out exactly right (E3). They are defaults the PG experts can change, not PG's own verdicts.</p>
@@ -375,7 +384,7 @@
 <ol>
   <li>Label 150 to 300 new Nigerian tokens, ideally twice, with the listening tool (<code>python -m pg.review</code>). This turns the vowels from not validated to validated.</li>
   <li>Take the questions above to Prof. Ugorji before presenting automated tables as PG results.</li>
-  <li>Add the podcast results and check the speaker separation against the known four-person panel.</li>
+  <li>Credit every word to a speaker (one in five of the podcast's words had none), and check the speaker labels by ear against the known four-person panel.</li>
   <li>Try a stronger model for vowels: the Montreal Forced Aligner's English model, trained partly on Nigerian English, or formant measurements.</li>
   <li>Finish the single repository with deploy on push and the daily keep-awake visit.</li>
 </ol>
