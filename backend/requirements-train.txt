@@ -1,6 +1,8 @@
-# Extra libraries for finetune_model.py only (run on a GPU machine, e.g. Colab); never installed in the live app.
+# Extra libraries for finetune_model.py and the FYP audit (eval/fyp_audit.py, eval/slr70.py); never installed in the live app.
 -r requirements.in
 datasets>=5.0.1
 pyarrow>=23.0.1
 accelerate>=1.15.0
 jiwer>=4.0.0
+pandas>=2.2
+remotezip>=0.12

@@ -30,6 +30,11 @@
   .dead { background: var(--fill); }
   .sharp { font-style: italic; }
 
+  ol.refs { font-size: 9pt; margin-left: 22px; } ol.refs li { margin: 3px 0; break-inside: avoid; }
+  table.ev { font-size: 8.8pt; break-inside: auto; } table.ev tr { break-inside: avoid; }
+  table.ev td:first-child { white-space: nowrap; font-family: "Avenir Next", "Helvetica Neue", sans-serif; }
+  .cite { font-size: 9pt; }
+
   :root { color-scheme: light; }
   @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { color-scheme: light; } }
   :root[data-theme="dark"] { color-scheme: light; }
@@ -47,21 +52,21 @@
 <div class="sub">Demilade Bickersteth · Covenant University · 20 October 2026</div>
 
 <div class="lead">
-<p>Prof. C.U.C. Ugorji's Preference Grammar picks a preferred pronunciation from the forms speakers actually use, by ranking them on six tenets. Done by hand it takes a great many hours, so the team set out to automate it: our ICAEISD 2024 paper and slides, Prof's framework for the automation, the PRD, and the user flow in Figure 1. My final-year project was one block of that plan, the speech-to-text conversion.</p>
-<p>This report reviews the whole planned tool, component by component: what the plan said, what made sense, what did not and why, and what we found and built instead. Then it gives the results. The tool now runs end to end, from recordings to the operability table, is live on the web, and is reliable today for voiceless and voiced <span class="ipa">&lt;th&gt;</span> and the KIT vowel.</p>
+<p>Prof. C.U.C. Ugorji's Preference Grammar picks a preferred pronunciation from the forms speakers actually use, by ranking them on six tenets [1, 3]. Done by hand it takes a great many hours, so the team set out to automate it: our ICAEISD 2024 paper and slides [3], Prof's framework for the automation [P2], the PRD [P1], and the user flow in Figure 1 [P3]. My final-year project was one block of that plan, the speech-to-text conversion [8].</p>
+<p>This report reviews the whole planned tool, component by component: what the plan said, what made sense, what did not work and why, and what we found and built instead. Each finding points to a published source [n] or to a test in the repository that anyone can rerun (En); both lists are at the end. The tool now runs end to end, from recordings to the operability table, is live on the web, and is reliable today for voiceless and voiced <span class="ipa">&lt;th&gt;</span> and the KIT vowel (E4).</p>
 </div>
 
 <h2>1. Preference Grammar, in Ugorji's terms</h2>
-<p>PG has three components. The input is every attested form of a sound, in its words, as speakers produce it, with no underlying forms. The parameters are the six tenets: International acceptance, Contrastiveness, Frequency, Disambiguity, Phonetic simplicity and Pedagogic convenience, ranked by default as I-Ac &gt;&gt; ContR &gt;&gt; FreQ &gt;&gt; DisaM &gt;&gt; Pho-S &gt;&gt; Ped-C. As in Optimality Theory the ranking is strict but violable, and a user may promote, demote or delete a parameter. The output is the preferred forms, the candidates that earn the fewest violations. The working is shown in an operability table. The published examples are <i>think</i>, where <span class="ipa">[θɪŋk]</span> beats <span class="ipa">[tɪŋk]</span>, <span class="ipa">[sɪŋk]</span> and <span class="ipa">[zɪŋk]</span>, and the GOAT vowel, where <span class="ipa">[o]</span> wins. One outcome of PG is a Nigerian national model of the vowels.</p>
-<p>So the automated tool has one job: take recordings to attested forms, attested forms to marks on six ranked tenets, and marks to the operability table and the preferred form. Any automation has to reproduce Ugorji's two worked examples.</p>
+<p>Ugorji proposed PG for codifying the phonological corpora of New Englishes [1, 2]. It has three components [3]. The input is every attested form of a sound, in its words, as speakers produce it, with no underlying forms. The parameters are the six tenets: International acceptance, Contrastiveness, Frequency, Disambiguity, Phonetic simplicity and Pedagogic convenience, ranked by default as I-Ac &gt;&gt; ContR &gt;&gt; FreQ &gt;&gt; DisaM &gt;&gt; Pho-S &gt;&gt; Ped-C. The ranking is strict but violable, as in Optimality Theory [5], and a user may promote, demote or delete a parameter [3]. The output is the preferred forms, the candidates that earn the fewest violations, and the working is shown in an operability table. The published evaluations are <i>think</i>, where <span class="ipa">[θɪŋk]</span> beats <span class="ipa">[tɪŋk]</span>, <span class="ipa">[sɪŋk]</span> and <span class="ipa">[zɪŋk]</span> [1: 58; 3], and the GOAT vowel, where <span class="ipa">[o]</span> wins [4]. One outcome of PG is a Nigerian national model of the vowels [3].</p>
+<p>So the automated tool has one job: take recordings to attested forms, attested forms to marks on six ranked tenets, and marks to the operability table and the preferred form. Any automation has to reproduce Ugorji's two worked evaluations.</p>
 
 <h2>2. What we found, in short</h2>
 <ul>
-  <li><b>The central mistake was converting speech to text and then text to IPA.</b> That answers "what was said", but PG asks "how was it said". Because the output always looked plausible, this hid every other fault.</li>
-  <li><b>Clustering was asked to discover pronunciations</b> from features that mostly carry the speaker and the microphone.</li>
-  <li><b>The tenets had definitions but no evidence.</b> Without a rule for each mark, nothing could be ranked.</li>
-  <li><b>Success was measured by word error rate.</b> For PG what matters is how well the variant shares are estimated, checked against human labels.</li>
-  <li><b>The infrastructure was planned before the method worked.</b></li>
+  <li><b>Speech to text, then text to IPA, gives dictionary pronunciations.</b> That answers "what was said", while PG asks "how was it said" [3, 8]. Because the output always looked plausible, it also hid the training problems (section 4, component 4).</li>
+  <li><b>Clustering was asked to discover pronunciations</b> from features that also carry the speaker and the microphone [23].</li>
+  <li><b>The tenets had definitions but no evidence rules.</b> The published marks are the analyst's judgement [4], so nothing could be ranked automatically until each tenet had a rule (E3).</li>
+  <li><b>Success was measured by word error rate.</b> For PG what matters is how well the variant shares are estimated, checked against human labels with kappa [15] (E4).</li>
+  <li><b>The infrastructure was planned before the method had been shown to work</b> [P1].</li>
 </ul>
 <p class="sharp">Hear the sound directly, give every tenet its evidence, and measure against human ears.</p>
 
@@ -145,7 +150,7 @@
 <circle cx="20" cy="760" r="9" fill="#000"/><text x="20" y="763.6" fill="#fff" text-anchor="middle" font-size="9.5" font-weight="700">15</text>
 <circle cx="430" cy="300" r="9" fill="#000"/><text x="430" y="303.6" fill="#fff" text-anchor="middle" font-size="9.5" font-weight="700">16</text>
 </svg>
-<figcaption>Figure 1. The planned automated PG tool: the team's user flow for the Preference Grammar system, redrawn, with the PRD's infrastructure beside it. The numbers match the components in section 4. The block in the thick outline, speech-to-text conversion, was my final-year project.</figcaption>
+<figcaption>Figure 1. The planned automated PG tool: the team's user flow for the Preference Grammar system [P3], redrawn, with the PRD's infrastructure beside it [P1]. The numbers match the components in section 4. The block in the thick outline, speech-to-text conversion, was my final-year project [8].</figcaption>
 </figure>
 <p class="sharp">The aim was right. Most of what went wrong sat between the boxes: what each one had to hand to the next.</p>
 
@@ -153,121 +158,122 @@
 <h3>Input</h3>
 <div class="tw"><table class="comp">
 <tr><th colspan="2"><span class="num">1</span> User input</th></tr>
-<tr><td class="k">The plan</td><td>A web system where a user uploads speech and sets a tenet preference; the PRD adds user stories for researchers, educators, developers, policy makers and learners.</td></tr>
-<tr><td class="k">Made sense</td><td>Putting the user's ranking at the centre. Ugorji's PG lets a user promote, demote or delete parameters, so the tool has to let them.</td></tr>
-<tr><td class="k">Did not, and why</td><td>Five audiences and their features were planned before one analysis worked end to end.</td></tr>
-<tr><td class="k">What we found, and what the tool does now</td><td>One page for one job: words, recordings and a ranking in; the operability table and the preferred form out. Everything else can wait for that to be trusted.</td></tr>
+<tr><td class="k">The plan</td><td>A web system where a user uploads speech and sets a tenet preference [P2]; the PRD adds user stories for researchers, educators, developers, policy makers and learners [P1].</td></tr>
+<tr><td class="k">Made sense</td><td>Putting the user's ranking at the centre. PG lets a user promote, demote or delete parameters [3], so the tool has to let them.</td></tr>
+<tr><td class="k">What did not work, and why</td><td>Five audiences and their features were planned before a single analysis had run end to end [P1]. That spread the effort thin at the start.</td></tr>
+<tr><td class="k">What we found, and what the tool does now</td><td>One page for one job: words, recordings and a ranking in; the operability table and the preferred form out. The other audiences can build on it once it is trusted.</td></tr>
 </table></div>
 <div class="tw"><table class="comp">
 <tr><th colspan="2"><span class="num">2</span> Target word and priority ranking</th></tr>
-<tr><td class="k">The plan</td><td>The user gives a target word and a priority ranking; the ranking is applied at matrix processing.</td></tr>
-<tr><td class="k">Made sense</td><td>PG's input is attested forms within lexical contexts, and the word is that context. The ranking belongs to the user.</td></tr>
-<tr><td class="k">Did not, and why</td><td>One word gives few tokens. The plan did not say which sound in the word is under study, and a ranking as a plain list cannot pool two tenets or delete one, which PG allows.</td></tr>
-<tr><td class="k">What we found, and what the tool does now</td><td>Several words that share a sound; the sound is chosen from a list (or inferred) and each is marked validated or not. The ranking editor reorders, deletes and pools tenets.</td></tr>
+<tr><td class="k">The plan</td><td>The user gives a target word and a priority ranking; the ranking is applied at matrix processing [P3].</td></tr>
+<tr><td class="k">Made sense</td><td>PG's input is attested forms within their lexical contexts [3], and the word is that context. The ranking belongs to the user.</td></tr>
+<tr><td class="k">What did not work, and why</td><td>One word yields few tokens. The plan did not say which sound in the word is under study, and a ranking kept as a plain list cannot pool two tenets or delete one, which PG allows [3].</td></tr>
+<tr><td class="k">What we found, and what the tool does now</td><td>Several words that share a sound; the sound is chosen from a list (or inferred) and each one is marked validated or not. The ranking editor reorders, deletes and pools tenets; pooled and re-ranked evaluations are tested (E3).</td></tr>
 </table></div>
 <div class="tw"><table class="comp">
 <tr><th colspan="2"><span class="num">3</span> Audio files</th></tr>
-<tr><td class="k">The plan</td><td>Accept large continuous speech files. Prof's framework reviews continuous speech separation for overlapping talk.</td></tr>
+<tr><td class="k">The plan</td><td>Accept large continuous speech files [3]. Prof's framework reviews continuous speech separation for overlapping talk [P2].</td></tr>
 <tr><td class="k">Made sense</td><td>Real speech from many speakers, including long recordings, is what PG needs.</td></tr>
-<tr><td class="k">Did not, and why</td><td>Every file was treated as one voice. Separation was reviewed in the framework but never designed, so a podcast panel would have counted as one speaker.</td></tr>
-<tr><td class="k">What we found, and what the tool does now</td><td>Any common audio format, voice notes recorded in the browser, and podcasts. Speaker separation (ECAPA) credits each word to the person who said it (section 6).</td></tr>
+<tr><td class="k">What did not work, and why</td><td>Each file was treated as one voice: the original service returned one transcription per file (E2), and speaker separation was reviewed [P2] but not yet designed. A podcast panel would have counted as one speaker.</td></tr>
+<tr><td class="k">What we found, and what the tool does now</td><td>Any common audio format, voice notes recorded in the browser, and podcasts. Speaker separation with ECAPA-TDNN [12, 13] credits each word to the person who said it; on 8 held-out conversations it found the right number of speakers every time (E6).</td></tr>
 </table></div>
 <h3>Speech to text conversion: my final-year project</h3>
 <div class="tw"><table class="comp">
 <tr><th colspan="2"><span class="num">4</span> ASR processing</th></tr>
-<tr><td class="k">The plan</td><td>PRD: a CNN-RNN trained on Colab with MFCC features. My thesis: wav2vec2 fine-tuned on Nigerian English (SLR70: 5.77 hours, 3,359 utterances, 31 speakers).</td></tr>
-<tr><td class="k">Made sense</td><td>Starting from a pretrained wav2vec2 model and public Nigerian recordings. Training a CNN-RNN from scratch on about 6 hours of audio would not have worked.</td></tr>
-<tr><td class="k">Did not, and why</td><td>The fine-tune never trained. The transcripts were lowercased against an uppercase vocabulary, so all 174,915 label tokens became <code>&lt;unk&gt;</code>. transformers 4.51.3 left <code>masked_spec_embed</code> uninitialised: every loss was NaN, logged as 0.000000, and the learning rate stayed at 0 for 3,780 steps. The published model is byte-for-byte <code>facebook/wav2vec2-base-960h</code>. The random 90/10 split put all 31 speakers in both halves and 67 of 336 validation sentences (20%) in training too. The stock model scores WER 36.7% there; the thesis reports 41.10% with the same 112 deletions, so it very likely measured the stock model. Underneath all of it, ASR answers which words were said, and PG asks how.</td></tr>
-<tr><td class="k">What we found, and what the tool does now</td><td>ASR only finds the words. Whisper small searches unscripted audio, including look-alike words (<i>tree</i> for <i>three</i>); a letter aligner places words when there is a transcript. The fine-tuning script is fixed (a 30-step check: loss 1.40 to 0.72, no NaN) but not rerun, because the tool does not need it. A full run would take 2 to 3 hours per pass on this laptop, or about an hour on a free Colab GPU.</td></tr>
+<tr><td class="k">The plan</td><td>PRD: a CNN-RNN trained on Colab with MFCC features [P1]. My thesis: wav2vec 2.0 [9] fine-tuned on Nigerian English, SLR70 (5.77 hours, 3,359 utterances, 31 speakers) [8, 18].</td></tr>
+<tr><td class="k">Made sense</td><td>Fine-tuning a pretrained wav2vec 2.0 model on public Nigerian recordings was a sound, current choice, and better than training a CNN-RNN from scratch on about 6 hours of audio. A random 90/10 split and word error rate are the usual practice in speech-recognition work, and the thesis measured exactly what it set out to measure [8].</td></tr>
+<tr><td class="k">What did not work, and why</td><td>In hindsight, three things stopped the fine-tune from learning, none of them visible in the output. (a) The script lowercased the transcripts (E2), but the model's vocabulary has only capital letters, so all 174,915 label characters in the training half became <code>&lt;unk&gt;</code> and none was a real letter (E1). (b) The installed transformers 4.51.3 leaves one weight, <code>masked_spec_embed</code>, uninitialised when the model loads (it prints a warning to that effect) (E1). The published training logs show what followed: at all 37 logged steps the loss reads 0.0, the gradient norm is NaN and the learning rate is 0, over 3,780 steps (E1). Compared tensor by tensor, all 212 weights the published model shares with the stock model are identical, and its one extra weight, <code>masked_spec_embed</code>, holds 41 NaN values out of 768 (E1). (c) The split put all 31 speakers on both sides, and 67 of the 336 validation sentences also occur in training (E1). Re-run on that same 336-utterance validation split, the unchanged stock model scores WER 36.7% with 112 deletions (E1); the thesis reports 41.10% with 112 deletions [8]. With every weight identical, the reported figure describes the stock model; the difference in WER most likely comes from how the transcripts were normalised before scoring. Underneath all three, speech recognition answers which words were said, while PG asks how they were said.</td></tr>
+<tr><td class="k">What we found, and what the tool does now</td><td>Speech recognition now only finds the words: Whisper [11] searches unscripted audio, including look-alike words (<i>tree</i> for <i>three</i>), and a letter aligner places the words when a transcript is given. The fine-tuning script is fixed (capital-letter labels, the weight re-initialised, a guard against invalid losses, a speaker-disjoint split) and a 30-step check ran cleanly (loss 1.40 to 0.72). It has not been rerun in full because the tool no longer depends on it; a full run would take 2 to 3 hours per pass on this laptop, or about an hour on a free Colab GPU.</td></tr>
 </table></div>
 <div class="tw"><table class="comp">
 <tr><th colspan="2"><span class="num">5</span> Phoneme tokenisation</th></tr>
-<tr><td class="k">The plan</td><td>Split speech into phoneme tokens before clustering.</td></tr>
+<tr><td class="k">The plan</td><td>Split speech into phoneme tokens before clustering [P2, P3].</td></tr>
 <tr><td class="k">Made sense</td><td>PG works on segments inside words, so the tool must find the segment.</td></tr>
-<tr><td class="k">Did not, and why</td><td>In the thesis the tokens came from text: the transcription split into words. Nothing in the audio was tokenised.</td></tr>
-<tr><td class="k">What we found, and what the tool does now</td><td>The pronouncing dictionary says where the sound sits in each word; the phone model's alignment finds its frames in the audio.</td></tr>
+<tr><td class="k">What did not work, and why</td><td>In the thesis the tokens came from text: the transcription was split into words (thesis Figure 3.1) [8]. Nothing in the audio was tokenised.</td></tr>
+<tr><td class="k">What we found, and what the tool does now</td><td>The pronouncing dictionary [21, 22] says where the sound sits in each word, and the phone model's alignment finds its frames in the audio.</td></tr>
 </table></div>
 <div class="tw"><table class="comp">
 <tr><th colspan="2"><span class="num">6</span> IPA mapping</th></tr>
-<tr><td class="k">The plan</td><td>Map words or phonemes to IPA: eSpeak in the thesis, a dictionary such as CMU in the presentation.</td></tr>
-<tr><td class="k">Made sense</td><td>IPA is the shared notation, and PG tables are written in it.</td></tr>
-<tr><td class="k">Did not, and why</td><td>A dictionary gives the citation form. The thesis's own Table 4.2 gives "there" as <span class="ipa">[ðɛr]</span>, and it would say so whether the speaker said <span class="ipa">[ð]</span> or <span class="ipa">[d]</span>. This step erases the variation PG ranks.</td></tr>
-<tr><td class="k">What we found, and what the tool does now</td><td>Candidate pronunciations, written in IPA, are scored against the audio by a phone model (<code>wav2vec2-xlsr-53-espeak-cv-ft</code>), with a confidence for each token. Each sound carries a validation status (section 6).</td></tr>
+<tr><td class="k">The plan</td><td>Map words or phonemes to IPA: eSpeak in the thesis [8], a dictionary such as CMU in the team's stage plan [P4].</td></tr>
+<tr><td class="k">Made sense</td><td>IPA is the shared notation, and PG tables are written in it. eSpeak is the standard way to turn text into IPA, and the thesis itself presents its IPA output as illustrative, not verified (thesis §4.4) [8].</td></tr>
+<tr><td class="k">What did not work, and why</td><td>A dictionary gives the citation form. The thesis's Table 4.2 gives <i>there</i> as <span class="ipa">[ðɛr]</span> [8], and the same entry is returned whether the speaker said <span class="ipa">[ð]</span> or <span class="ipa">[d]</span>. PG's input is the attested forms [3], so this step removes the variation PG ranks.</td></tr>
+<tr><td class="k">What we found, and what the tool does now</td><td>Candidate pronunciations, written in IPA, are scored against the audio by a multilingual phone model [10], the goodness-of-pronunciation approach [14], with a confidence for each token. Each sound carries a validation status from phonetician-labelled speech (section 6) (E4).</td></tr>
 </table></div>
 <div class="tw"><table class="comp">
 <tr><th colspan="2"><span class="num">7</span> CSV or VTT file</th></tr>
-<tr><td class="k">The plan</td><td>Write text and IPA to a CSV, a 5×6 matrix in the framework, or a VTT subtitle file.</td></tr>
+<tr><td class="k">The plan</td><td>Write text and IPA to a CSV, a 5×6 matrix in the framework [P2], or a VTT subtitle file [P3].</td></tr>
 <tr><td class="k">Made sense</td><td>Plain files an analyst can open.</td></tr>
-<tr><td class="k">Did not, and why</td><td>A VTT file needs word times. The thesis estimated them from the clip's duration; the app itself returned no word times at all. The 5×6 size was fixed by the matrix, not by the data.</td></tr>
-<tr><td class="k">What we found, and what the tool does now</td><td>Downloads in CSV, JSON, HTML and subtitle formats, with measured start and end times for every token.</td></tr>
+<tr><td class="k">What did not work, and why</td><td>A VTT file needs word times. The thesis estimated them from the clip's duration (thesis Figure 3.1) [8]; the deployed service returned no word times at all (E2). The 5×6 size came from the matrix, not from the data.</td></tr>
+<tr><td class="k">What we found, and what the tool does now</td><td>Downloads in CSV, JSON, HTML and subtitle formats, with measured start and end times for every token (E8).</td></tr>
 </table></div>
 <h3>Audio clustering</h3>
 <div class="tw"><table class="comp">
 <tr><th colspan="2"><span class="num">8</span> Primary clustering</th></tr>
-<tr><td class="k">The plan</td><td>K-means (and spectral clustering) on MFCC features to group similar sounds.</td></tr>
-<tr><td class="k">Made sense</td><td>Unsupervised grouping could find variants without labels.</td></tr>
-<tr><td class="k">Did not, and why</td><td>MFCCs of whole words group recordings by speaker and microphone more than by pronunciation. The number of clusters is unknown in advance, and a cluster does not say which variant it holds.</td></tr>
-<tr><td class="k">What we found, and what the tool does now</td><td>The phone model's variant label does the grouping: every token is <span class="ipa">[θ]</span>, <span class="ipa">[t]</span>, <span class="ipa">[s]</span> and so on, with a confidence.</td></tr>
+<tr><td class="k">The plan</td><td>K-means (and spectral clustering) on MFCC features to group similar sounds [P3, 3].</td></tr>
+<tr><td class="k">Made sense</td><td>Unsupervised grouping could find variants without labelled data, a sensible instinct.</td></tr>
+<tr><td class="k">What did not work, and why</td><td>MFCC features carry the speaker's voice and the recording channel as well as the sound; speaker-identification systems are built on them [23]. Clusters of whole words can therefore follow the speaker more than the pronunciation, and a cluster does not say which variant it holds.</td></tr>
+<tr><td class="k">What we found, and what the tool does now</td><td>The phone model's variant label does the grouping: every token is <span class="ipa">[θ]</span>, <span class="ipa">[t]</span>, <span class="ipa">[s]</span> and so on, with a confidence (E4).</td></tr>
 </table></div>
 <div class="tw"><table class="comp">
 <tr><th colspan="2"><span class="num">9</span> Secondary clustering</th></tr>
-<tr><td class="k">The plan</td><td>Sub-clusters by cosine similarity, at most a 5×6 matrix.</td></tr>
+<tr><td class="k">The plan</td><td>Sub-clusters by cosine similarity, at most a 5×6 matrix [3, P4].</td></tr>
 <tr><td class="k">Made sense</td><td>Looking for finer detail inside a variant.</td></tr>
-<tr><td class="k">Did not, and why</td><td>The same problem as above, and the matrix size decided the clusters.</td></tr>
-<tr><td class="k">What we found, and what the tool does now</td><td>Acoustic sub-clusters inside each variant, from the phone model's features. They barely separate anything, so the app shows them as exploratory only.</td></tr>
+<tr><td class="k">What did not work, and why</td><td>The same limits as above, and the matrix size decided the number of clusters.</td></tr>
+<tr><td class="k">What we found, and what the tool does now</td><td>Acoustic sub-clusters inside each variant, from the phone model's features. In our checks they barely separate the variants, so the app shows them as exploratory (E7).</td></tr>
 </table></div>
 <div class="tw"><table class="comp">
 <tr><th colspan="2"><span class="num">10</span> Matrix showing contrastiveness</th></tr>
-<tr><td class="k">The plan</td><td>A confusion matrix of the sub-clusters, used for the operability analysis.</td></tr>
-<tr><td class="k">Made sense</td><td>Contrast matters to PG; it is one of the six tenets.</td></tr>
-<tr><td class="k">Did not, and why</td><td>A confusion matrix measures how much clusters overlap acoustically. PG's Contrastiveness and Disambiguity ask something else: whether a variant merges a contrast and makes words sound alike.</td></tr>
-<tr><td class="k">What we found, and what the tool does now</td><td>The contrast matrix is kept as exploratory. Contrastiveness is marked from the Lingua Franca Core and Disambiguity from pronouncing dictionaries: <span class="ipa">[t]</span> in <i>think</i> merges 78 common word pairs, such as <i>bath</i> and <i>bat</i>.</td></tr>
+<tr><td class="k">The plan</td><td>A confusion matrix of the sub-clusters, used for the operability analysis [3].</td></tr>
+<tr><td class="k">Made sense</td><td>Contrast matters to PG: Contrastiveness is one of the six tenets [3].</td></tr>
+<tr><td class="k">What did not work, and why</td><td>A confusion matrix measures how much clusters overlap acoustically. PG defines Contrastiveness as phonological distinctiveness and Disambiguity as avoiding ambiguity [3]: whether a variant merges a contrast and makes words sound alike.</td></tr>
+<tr><td class="k">What we found, and what the tool does now</td><td>The contrast matrix is kept as exploratory (E7). Contrastiveness is marked from the Lingua Franca Core [6] and Disambiguity from pronouncing dictionaries [21, 22]: <span class="ipa">[t]</span> in <i>think</i> merges 78 common word pairs, such as <i>bath</i> and <i>bat</i> (E3).</td></tr>
 </table></div>
 <h3>Standard pronunciation generation</h3>
 <div class="tw"><table class="comp">
 <tr><th colspan="2"><span class="num">11</span> Matrix processing</th></tr>
-<tr><td class="k">The plan</td><td>Apply the user's ranking to the matrix. The presentation: assign a rank to each cluster by quality or relevance.</td></tr>
-<tr><td class="k">Made sense</td><td>The ranking is the heart of PG.</td></tr>
-<tr><td class="k">Did not, and why</td><td>No rule said how a candidate earns a mark on each tenet, and ranking clusters by quality is not PG's evaluation.</td></tr>
-<tr><td class="k">What we found, and what the tool does now</td><td>Rules for each tenet that reproduce Ugorji's <i>think</i> and GOAT tableaux exactly, under strict domination. A variant competes once it has at least 3 tokens from 2 speakers. Experts can override any mark.</td></tr>
+<tr><td class="k">The plan</td><td>Apply the user's ranking to the matrix [P3]; assign a rank to each cluster by quality or relevance [P4].</td></tr>
+<tr><td class="k">Made sense</td><td>The ranking is the heart of PG [3].</td></tr>
+<tr><td class="k">What did not work, and why</td><td>PG's published evaluations are the analyst's judgement and give no algorithm for awarding a mark; Jowitt asks on what basis International acceptance is assigned [4]. Without such rules nothing could be ranked automatically, and ranking clusters by quality is a different operation from PG's evaluation [3, 5].</td></tr>
+<tr><td class="k">What we found, and what the tool does now</td><td>A rule for each tenet, chosen so that Ugorji's <i>think</i> and GOAT evaluations [1, 3, 4] come out exactly, under strict domination as in Optimality Theory [5] (E3). A variant competes once it has at least 3 tokens from 2 speakers. Experts can override any mark.</td></tr>
 </table></div>
 <div class="tw"><table class="comp">
 <tr><th colspan="2"><span class="num">12</span> Outputs</th></tr>
-<tr><td class="k">The plan</td><td>The operability table and the standard pronunciation, saved as .txt and .csv. The presentation adds a "PG operability metric" of accuracy, consistency and usability.</td></tr>
-<tr><td class="k">Made sense</td><td>Two outputs, exactly as PG defines them.</td></tr>
-<tr><td class="k">Did not, and why</td><td>Accuracy and usability measure the software, not the pronunciation, and they do not belong in PG's operability.</td></tr>
-<tr><td class="k">What we found, and what the tool does now</td><td>Both outputs, plus warnings when a sound is not validated or the data is thin, and every token for checking by ear.</td></tr>
+<tr><td class="k">The plan</td><td>The operability table and the standard pronunciation, saved as .txt and .csv; the stage plan adds a "PG operability metric" of accuracy, consistency and usability [P4].</td></tr>
+<tr><td class="k">Made sense</td><td>Two outputs, exactly as PG defines them [3].</td></tr>
+<tr><td class="k">What did not work, and why</td><td>Accuracy and usability describe the software. In PG, operability is the evaluation of candidates against the ranked tenets [3], so the two are better kept apart.</td></tr>
+<tr><td class="k">What we found, and what the tool does now</td><td>Both outputs, plus warnings when a sound is not validated or the data is thin, and every token listed for checking by ear (E8).</td></tr>
 </table></div>
 <div class="tw"><table class="comp">
 <tr><th colspan="2"><span class="num">13</span> Operability table</th></tr>
-<tr><td class="k">The plan</td><td>Ugorji's tableau: candidates in rows, tenets in columns, violation marks in the cells.</td></tr>
+<tr><td class="k">The plan</td><td>Ugorji's tableau: candidates in rows, tenets in columns, violation marks in the cells [1, 3].</td></tr>
 <tr><td class="k">Made sense</td><td>It is how PG shows its working.</td></tr>
-<tr><td class="k">Did not, and why</td><td>Never produced.</td></tr>
-<tr><td class="k">What we found, and what the tool does now</td><td>Produced in PG style, with an OT view. Figure 3 is the <i>think</i> table as the tool prints it.</td></tr>
+<tr><td class="k">What did not work, and why</td><td>Not yet produced by the earlier work.</td></tr>
+<tr><td class="k">What we found, and what the tool does now</td><td>Produced in PG style, with an OT view. Figure 3 is the <i>think</i> table as the tool prints it, mark for mark as in Ugorji's slide [3] (E3).</td></tr>
 </table></div>
 <div class="tw"><table class="comp">
 <tr><th colspan="2"><span class="num">14</span> Standard pronunciation</th></tr>
-<tr><td class="k">The plan</td><td>The winning candidate.</td></tr>
-<tr><td class="k">Made sense</td><td>PG's output component: the preferred forms earn the fewest violations.</td></tr>
-<tr><td class="k">Did not, and why</td><td>Nothing said how sure the winner is.</td></tr>
-<tr><td class="k">What we found, and what the tool does now</td><td>The preferred form, its tier (formal standard, allophone or outer norm), and how often it still wins when speakers are resampled and uncertain tokens redrawn.</td></tr>
+<tr><td class="k">The plan</td><td>The winning candidate [P3].</td></tr>
+<tr><td class="k">Made sense</td><td>PG's output component: the preferred forms earn the fewest violations [3].</td></tr>
+<tr><td class="k">What did not work, and why</td><td>The plan did not say how sure the winner is.</td></tr>
+<tr><td class="k">What we found, and what the tool does now</td><td>The preferred form, its tier (formal standard, allophone or outer norm), and how often it still wins when speakers are resampled and uncertain tokens redrawn (E8).</td></tr>
 </table></div>
 <h3>Evaluation criteria</h3>
 <div class="tw"><table class="comp">
 <tr><th colspan="2"><span class="num">15</span> Evaluation criteria: the six tenets</th></tr>
-<tr><td class="k">The plan</td><td>International acceptance, Contrastiveness, Frequency, Disambiguity, Phonetic simplicity and Pedagogic convenience, ranked I-Ac &gt;&gt; ContR &gt;&gt; FreQ &gt;&gt; DisaM &gt;&gt; Pho-S &gt;&gt; Ped-C.</td></tr>
-<tr><td class="k">Made sense</td><td>These are Ugorji's own definitions and default ranking.</td></tr>
-<tr><td class="k">Did not, and why</td><td>They are prose. Nothing said what evidence decides each mark, and Frequency can be read two ways.</td></tr>
-<tr><td class="k">What we found, and what the tool does now</td><td>A source of evidence for each tenet (section 7): a knowledge base, the Lingua Franca Core, the recordings, pronouncing dictionaries and PHOIBLE. Frequency works both ways, as a setting.</td></tr>
+<tr><td class="k">The plan</td><td>International acceptance, Contrastiveness, Frequency, Disambiguity, Phonetic simplicity and Pedagogic convenience, ranked I-Ac &gt;&gt; ContR &gt;&gt; FreQ &gt;&gt; DisaM &gt;&gt; Pho-S &gt;&gt; Ped-C [3].</td></tr>
+<tr><td class="k">Made sense</td><td>These are Ugorji's own definitions and default ranking [1, 3].</td></tr>
+<tr><td class="k">What did not work, and why</td><td>The definitions are qualitative, and the sources leave open what evidence decides each mark [4]. Frequency in particular can be read two ways, and the reading changes the winner for <i>think</i> (E3).</td></tr>
+<tr><td class="k">What we found, and what the tool does now</td><td>A source of evidence for each tenet (section 7): a knowledge base, the Lingua Franca Core [6], the recordings, pronouncing dictionaries [21, 22] and PHOIBLE [16]. Both readings of Frequency are available as a setting.</td></tr>
 </table></div>
 <h3>Around everything</h3>
 <div class="tw"><table class="comp">
 <tr><th colspan="2"><span class="num">16</span> API, hosting and infrastructure</th></tr>
-<tr><td class="k">The plan</td><td>A Node.js/Express API; AWS S3, RDS (PostgreSQL), MongoDB and a Redis queue; serving on EKS or SageMaker; ONNX; Prometheus, Grafana, CloudWatch and ELK.</td></tr>
+<tr><td class="k">The plan</td><td>A Node.js/Express API; AWS S3, RDS (PostgreSQL), MongoDB and a Redis queue; serving on EKS or SageMaker; ONNX; Prometheus, Grafana, CloudWatch and ELK [P1].</td></tr>
 <tr><td class="k">Made sense</td><td>An API, and containers.</td></tr>
-<tr><td class="k">Did not, and why</td><td>It was planned before the method worked. It is far more than a team of three can run, and it costs money every month.</td></tr>
-<tr><td class="k">What we found, and what the tool does now</td><td>One Python service serves the page and the API from one Docker image, live on Hugging Face's free hardware (section 6). One GitHub repository, deploy on push and a daily keep-awake visit are being set up.</td></tr>
+<tr><td class="k">What did not work, and why</td><td>The full estate was planned before the method had been shown to work, and it is more than the analysis needs at this stage.</td></tr>
+<tr><td class="k">What we found, and what the tool does now</td><td>One Python service serves the page and the API from one Docker image, live on Hugging Face's free hardware [19] (section 6) (E9). One GitHub repository, deploy on push and a daily keep-awake visit are being set up.</td></tr>
 </table></div>
+
 
 <h2>5. The tool now</h2>
 <figure>
@@ -296,7 +302,7 @@
     <line x1="580" y1="205" x2="562" y2="205"/><line x1="390" y1="205" x2="372" y2="205"/><line x1="200" y1="205" x2="182" y2="205"/>
   </g>
 </svg>
-<figcaption>Figure 2. The full cycle as it runs now. Every step is in <code>backend/pg/</code>; the web page, the API and the command line run the same code.</figcaption>
+<figcaption>Figure 2. The full cycle as it runs now. Every step is in <code>backend/pg/</code>; the web page, the API and the command line run the same code (E8).</figcaption>
 </figure>
 <h3>The models</h3>
 <div class="tw"><table>
@@ -306,10 +312,11 @@
 <tr><td>Find words in podcasts</td><td><code>openai/whisper-small</code></td><td>Writes a transcript with word times; each hit is then re-aligned. It also searches look-alike words (<i>tree</i> for <i>three</i>).</td></tr>
 <tr><td>Tell the speakers apart</td><td><code>speechbrain/spkrec-ecapa-voxceleb</code></td><td>Speaker fingerprints for short stretches of speech, grouped into speakers (section 6).</td></tr>
 </table></div>
+<p class="cite">Sources: phone model [10], built on wav2vec 2.0 [9]; aligner [9]; Whisper [11]; ECAPA-TDNN [12] through SpeechBrain [13]; all loaded with the transformers library [20] or SpeechBrain.</p>
 
 <h2>6. Results</h2>
 <h3>How well it hears each sound</h3>
-<p>The only free Nigerian English recordings with pronunciations transcribed by trained phoneticians are 22 speakers in the Speech Accent Archive, all reading the same paragraph: 753 test tokens. The fairest single number is kappa, agreement beyond chance. A model that always answers the commonest variant scores 0, however good its accuracy looks.</p>
+<p>The only free Nigerian English recordings with pronunciations transcribed by trained phoneticians are 22 speakers in the Speech Accent Archive [17], all reading the same paragraph: 753 test tokens. The fairest single number is Cohen's kappa [15], agreement beyond chance: a model that always answers the commonest variant scores 0, however good its accuracy looks (E4).</p>
 <div class="tw"><table>
 <tr><th>Sound</th><th>Tokens</th><th>Accuracy</th><th>Always guess the commonest</th><th>Kappa</th><th>Status</th></tr>
 <tr><td class="ipa">&lt;th&gt; /θ/ (think)</td><td>85</td><td>82%</td><td>58%</td><td>0.68</td><td>Validated</td></tr>
@@ -320,30 +327,31 @@
 <tr><td>FACE (snake, train)</td><td>89</td><td>54%</td><td>72%</td><td>0.13</td><td>Not validated</td></tr>
 <tr><td>FLEECE (please, meet)</td><td>183</td><td>90%</td><td>92%</td><td>0.06</td><td>Not validated</td></tr>
 </table></div>
-<p>An independent reviewer was asked to break this work, not defend it. It found two fake calibrations (GOAT and FACE gave every token the same answer), a weak test ("same preferred form as the experts"), a phone model that leans towards dictionary forms (it hears Nigerian <span class="ipa">[d]</span> as <span class="ipa">[ð]</span> far more often than the reverse), and several bugs. All are fixed or stated plainly: calibration is now kept only when kappa rises on speakers it was not fitted on, which leaves voiced <span class="ipa">&lt;th&gt;</span> alone.</p>
+<p>An independent review was asked to break this work, not defend it (E7). It found two calibrations that only looked useful (GOAT and FACE gave every token the same answer), a weak test ("same preferred form as the experts"), and a phone model that leans towards dictionary forms: it hears Nigerian <span class="ipa">[d]</span> as <span class="ipa">[ð]</span> 36 times and the reverse once. All are fixed or stated plainly; a calibration is now kept only when kappa rises on speakers it was not fitted on, which leaves voiced <span class="ipa">&lt;th&gt;</span> alone.</p>
 <h3>What it found in Nigerian speech</h3>
-<p>On 1,519 sentences from Google's Nigerian English corpus (31 speakers):</p>
+<p>On 1,519 sentences from Google's Nigerian English corpus [18], 31 speakers (E5):</p>
 <div class="tw"><table>
 <tr><th>Sound</th><th>Variant shares</th><th>Preferred (Ugorji's ranking)</th></tr>
 <tr><td class="ipa">&lt;th&gt; /θ/, 618 tokens</td><td class="ipa">θ 52%, t 36%, d 5%, s 4%, f 2%. Word-initially θ 48% and stops 48%, close to ICE-Nigeria (θ 47%, t 49%).</td><td class="ipa">[θ], in 100% of resamples</td></tr>
 <tr><td class="ipa">&lt;th&gt; /ð/, 925 tokens</td><td class="ipa">d 57%, ð 40% once the model's bias is corrected</td><td class="ipa">[ð] (99%); <i>d</i> loses on Disambiguity, not on the data</td></tr>
 <tr><td>NURSE, 676 tokens (not validated)</td><td class="ipa">ɜː 36%, ɛ 22%, ɔ 17%, a 15%, e 8%; the model still leans to the dictionary vowel</td><td class="ipa">[ɜː]</td></tr>
 </table></div>
+<p class="cite">ICE-Nigeria comparison: Oyebola, Ho &amp; Li [7].</p>
 <h3>Speaker separation</h3>
-<p>PG counts speakers, not files. The tool now cuts speech into 1.5-second windows, takes a speaker fingerprint of each with ECAPA, removes what all the fingerprints share (room, microphone, language), averages each window with its neighbours, groups them into speakers, and credits every target word to the person speaking at that moment. It was tested on made-up 4-minute panels of 2 to 5 real SLR70 Nigerian speakers, including three and four women together. The first model tried (WavLM) credited only 71% of words correctly for four women, even when told how many there were. ECAPA was tuned on 4 conversations, then tested on 8 it had never seen.</p>
+<p>PG counts speakers, not files. The tool cuts speech into 1.5-second windows, takes a speaker fingerprint of each with ECAPA-TDNN [12, 13], removes what all the fingerprints share (room, microphone, language), averages each window with its neighbours, groups them into speakers, and credits every target word to the person speaking at that moment. It was tested on made-up 4-minute panels of 2 to 5 real SLR70 Nigerian speakers [18], including three and four women together (E6). An earlier model, WavLM, credited under 75% of words correctly for four women even when told the number of speakers; ECAPA was then tuned on 4 conversations and tested on 8 it had never seen.</p>
 <div class="tw"><table>
 <tr><th>Test</th><th>Result</th></tr>
-<tr><td>Held out: 8 conversations, 2 to 5 speakers</td><td>right number of speakers in 8 of 8; 100% of sampled words credited to the right speaker</td></tr>
-<tr><td>Live server: a 63-second, 3-speaker conversation</td><td>3 speakers found; 5 of 5 target words credited right; 48 seconds</td></tr>
+<tr><td>Held out: 8 conversations, 2 to 5 speakers (E6)</td><td>right number of speakers in 8 of 8; 100% of sampled words credited to the right speaker</td></tr>
+<tr><td>Live server: a 63-second, 3-speaker conversation (E9); a 3-speaker check also runs on every push (E10)</td><td>3 speakers found; 5 of 5 target words credited right; 48 seconds</td></tr>
 </table></div>
 <p>The test is kinder than a real podcast: each clip was recorded separately, so microphone differences help, and the speakers come from the same pool of 31.</p>
 <h3>Live deployment</h3>
-<p>The tool is live at <code>https://thebickersteth-voxpreference.hf.space</code> on Hugging Face's free CPU hardware (2 cores, 16 GB). New Docker Spaces have needed a paid plan since mid-2026; ours existed before that and keeps the free hardware, so it must not be deleted. The account has no payment method and cannot be charged. Twelve SLR70 clips from 6 speakers ran in 18 seconds (6 <span class="ipa">[θ]</span>, 4 <span class="ipa">[t]</span>, <span class="ipa">[θ]</span> preferred). A free Space sleeps after 48 hours without visitors and wakes in a minute or two.</p>
+<p>The tool is live at <code>https://thebickersteth-voxpreference.hf.space</code> on Hugging Face's free CPU hardware (2 cores, 16 GB) [19]. New Docker Spaces have needed a paid plan since mid-2026 [19]; ours existed before that and keeps the free hardware, so it must not be deleted. The account has no payment method and cannot be charged. Twelve SLR70 clips from 6 speakers ran in 18 seconds (6 <span class="ipa">[θ]</span>, 4 <span class="ipa">[t]</span>, <span class="ipa">[θ]</span> preferred) (E9). A free Space sleeps after 48 hours without visitors and wakes in a minute or two [19].</p>
 <h3>Podcast test</h3>
 <p id="podcast">Results pending. A 43-minute Nigerian panel podcast with four hosts, two men and two women, is being analysed for every sound, once with Ugorji's ranking and once with Frequency first. The results go here when the run finishes.</p>
 
 <h2>7. The tenets, and Ugorji's table as the tool prints it</h2>
-<p>No PG source gives an algorithm; in the published tables the marks are the analyst's judgement. The rules below are our proposal, chosen so that both of Ugorji's evaluations come out exactly right. They are defaults the PG experts can change, not PG's own verdicts.</p>
+<p>No PG source gives an algorithm; the published marks are the analyst's judgement [4]. The rules below are our proposal, chosen so that both of Ugorji's evaluations [1, 3, 4] come out exactly right (E3). They are defaults the PG experts can change, not PG's own verdicts.</p>
 <div class="tw"><table>
 <tr><th>Tenet</th><th>A variant gets a mark when</th><th>Evidence</th></tr>
 <tr><td>International acceptance</td><td>it is not an accepted international norm for the sound (for <span class="ipa">/θ/</span>: <span class="ipa">θ, t, t̪, f</span> are; <span class="ipa">s, z</span> are not)</td><td>knowledge base: RP and GA, established L1 varieties, the Lingua Franca Core</td></tr>
@@ -353,6 +361,7 @@
 <tr><td>Phonetic simplicity</td><td>it is missing from most of Hausa, Igbo and Yoruba, or rare in the world's languages</td><td>PHOIBLE</td></tr>
 <tr><td>Pedagogic convenience</td><td>it is missing from those languages and rarely used by the speakers analysed</td><td>PHOIBLE and the recordings</td></tr>
 </table></div>
+<p class="cite">Sources: Lingua Franca Core [6]; pronouncing dictionaries [21, 22]; PHOIBLE [16].</p>
 <figure>
 <div class="tw"><table class="tab">
 <tr><th>&lt;th&gt; in <i>think</i></th><th>Share</th><th>I-Ac</th><th>ContR</th><th>FreQ</th><th>DisaM</th><th>Pho-S</th><th>Ped-C</th><th>Tier</th></tr>
@@ -361,15 +370,15 @@
 <tr><td class="ipa">c. sɪŋk</td><td>4.0%</td><td>*!</td><td class="dead"></td><td class="dead">*</td><td class="dead">*</td><td class="dead"></td><td class="dead"></td><td>outer norm</td></tr>
 <tr><td class="ipa">d. zɪŋk</td><td>0.0%</td><td>*!</td><td class="dead"></td><td class="dead">*</td><td class="dead">*</td><td class="dead"></td><td class="dead"></td><td>outer norm</td></tr>
 </table></div>
-<figcaption>Figure 3. Ugorji's <i>think</i> evaluation as the tool produces it, with his default ranking: the same marks and the same winner as his slide. Shares are word-initial <span class="ipa">/θ/</span> in ICE-Nigeria (Oyebola, Ho &amp; Li 2019). The reasons the tool gives: <span class="ipa">[t]</span> makes 78 common word pairs sound alike (<i>bath</i>/<i>bat</i>), <span class="ipa">[θ]</span> is absent from Hausa, Igbo and Yoruba, and <span class="ipa">[s]</span> and <span class="ipa">[z]</span> are outside the international norms. Shaded cells no longer matter once a fatal mark (!) is given.</figcaption>
+<figcaption>Figure 3. Ugorji's <i>think</i> evaluation [1: 58; 3] as the tool produces it, with his default ranking: the same marks and the same winner as his slide (E3). Shares are word-initial <span class="ipa">/θ/</span> in ICE-Nigeria [7]. The reasons the tool gives: <span class="ipa">[t]</span> makes 78 common word pairs sound alike (<i>bath</i>/<i>bat</i>) [21, 22], <span class="ipa">[θ]</span> is absent from Hausa, Igbo and Yoruba [16], and <span class="ipa">[s]</span> and <span class="ipa">[z]</span> are outside the international norms [6]. Shaded cells no longer matter once a fatal mark (!) is given [5].</figcaption>
 </figure>
 <h3>What "rank by frequency" means</h3>
-<p>Most users read "Frequency first" as "the commonest pronunciation wins": if <i>think</i> came out with <span class="ipa">[θ]</span> 49 times and that was the most, <span class="ipa">[θ]</span> is preferred. Ugorji's <i>think</i> table only comes out right under another reading, where Frequency removes rare variants (under 20%), because in his Nigerian data <span class="ipa">[t]</span> is slightly more common than <span class="ipa">[θ]</span>. Both readings are in the tool. The default follows Ugorji.</p>
+<p>Many users read "Frequency first" as "the commonest pronunciation wins": if <i>think</i> came out with <span class="ipa">[θ]</span> 49 times and that was the most, <span class="ipa">[θ]</span> is preferred. Ugorji's <i>think</i> table only comes out right under another reading, where Frequency removes rare variants (under 20%), because in the ICE-Nigeria shares <span class="ipa">[t]</span> is slightly more common than <span class="ipa">[θ]</span> [7]. Both readings are in the tool, and the test suite checks that each gives its expected winner (E3). The default follows Ugorji.</p>
 
 <h2>8. Questions for Prof. Ugorji</h2>
 <ul>
-  <li>Which norms count as international, and why <span class="ipa">[t]</span> escapes that mark in <i>think</i> while <span class="ipa">[s]</span> does not.</li>
-  <li>What Frequency means: a threshold or "the commonest wins"; per token or per speaker; over whose speech. This alone can flip <i>think</i> to <span class="ipa">[t]</span>.</li>
+  <li>Which norms count as international, and why <span class="ipa">[t]</span> escapes that mark in <i>think</i> while <span class="ipa">[s]</span> does not [1, 3]. Jowitt raises the same question [4].</li>
+  <li>What Frequency means: a threshold or "the commonest wins"; per token or per speaker; over whose speech. This alone can flip <i>think</i> to <span class="ipa">[t]</span> (E3).</li>
   <li>What separates Contrastiveness from Disambiguity, and what counts as evidence for Pedagogic convenience. The full list of 10 is in <code>backend/pg/RESEARCH.md</code>, section 6.</li>
 </ul>
 
@@ -382,5 +391,55 @@
   <li>Finish the single repository with deploy on push and the daily keep-awake visit.</li>
 </ol>
 <p class="sharp">The method works where it has been checked. The next work is checking more of it.</p>
+
+<h2>References</h2>
+<ol class="refs">
+<li value="1">Ugorji, C.U.C. (2010). <i>Nigerian English Phonology: A Preference Grammar</i>. Frankfurt am Main: Peter Lang. (The <i>think</i> evaluation is on p. 58.)</li>
+<li value="2">Ugorji, C.U.C. (2013). Standardising New Englishes: A suggestion for phonological corpora. <i>Journal of English as an International Language</i>, 8(2), 88–101.</li>
+<li value="3">Ugorji, C.U.C., Iheanetu, O.U., Maduako, G., Mbakogu, C., Bickersteth, D. &amp; Eyisi, J. (2024). <i>Automation of Preference Grammar</i>. Paper presented at the International Conference on Advancement of Engineering Innovation for Sustainable Development (ICAEISD 2024), Covenant University, Ota, 26–28 November 2024. Slides: the PG tenets, mechanism, components (input, parameters, output), the <i>think</i> operability table, and the proposed automation.</li>
+<li value="4">Jowitt, D. (2015). Nigerian Received Pronunciation. In T. Opeibi, J. Schmied, T. Omoniyi &amp; K. Adedeji (eds.), <i>Essays on Language in Societal Transformation: A Festschrift in Honour of Segun Awonusi</i> (REAL Studies 9), 3–13. Göttingen: Cuvillier.</li>
+<li value="5">Prince, A. &amp; Smolensky, P. (1993). <i>Optimality Theory: Constraint Interaction in Generative Grammar</i>. Technical Report RuCCS-TR-2, Rutgers University Center for Cognitive Science.</li>
+<li value="6">Jenkins, J. (2000). <i>The Phonology of English as an International Language</i>. Oxford: Oxford University Press.</li>
+<li value="7">Oyebola, F., Ho, S.Y.B. &amp; Li, Z. (2019). A sociophonetic study on TH variation in educated Nigerian English. In <i>Proceedings of the 19th International Congress of Phonetic Sciences</i>, Melbourne, 2320–2323.</li>
+<li value="8">Bickersteth, O. (2025). <i>Development of a Pipeline for Continuous Speech Recognition and Transcription into IPA Representations</i>. BSc project, Department of Computer and Information Sciences, Covenant University, Ota. Supervisor: Dr O.U. Iheanetu.</li>
+<li value="9">Baevski, A., Zhou, H., Mohamed, A. &amp; Auli, M. (2020). wav2vec 2.0: A framework for self-supervised learning of speech representations. <i>Advances in Neural Information Processing Systems</i> 33.</li>
+<li value="10">Xu, Q., Baevski, A. &amp; Auli, M. (2022). Simple and effective zero-shot cross-lingual phoneme recognition. In <i>Proceedings of Interspeech 2022</i>. arXiv:2109.11680. (Model: <code>facebook/wav2vec2-xlsr-53-espeak-cv-ft</code>.)</li>
+<li value="11">Radford, A., Kim, J.W., Xu, T., Brockman, G., McLeavey, C. &amp; Sutskever, I. (2023). Robust speech recognition via large-scale weak supervision. In <i>Proceedings of ICML 2023</i>. arXiv:2212.04356. (Model: <code>openai/whisper-small</code>.)</li>
+<li value="12">Desplanques, B., Thienpondt, J. &amp; Demuynck, K. (2020). ECAPA-TDNN: Emphasized channel attention, propagation and aggregation in TDNN based speaker verification. In <i>Proceedings of Interspeech 2020</i>, 3830–3834.</li>
+<li value="13">Ravanelli, M. et al. (2021). SpeechBrain: A general-purpose speech toolkit. arXiv:2106.04624. (Model: <code>speechbrain/spkrec-ecapa-voxceleb</code>.)</li>
+<li value="14">Witt, S.M. &amp; Young, S.J. (2000). Phone-level pronunciation scoring and assessment for interactive language learning. <i>Speech Communication</i>, 30(2–3), 95–108.</li>
+<li value="15">Cohen, J. (1960). A coefficient of agreement for nominal scales. <i>Educational and Psychological Measurement</i>, 20(1), 37–46.</li>
+<li value="16">Moran, S. &amp; McCloy, D. (eds.) (2019). <i>PHOIBLE 2.0</i>. Jena: Max Planck Institute for the Science of Human History. https://phoible.org, doi:10.5281/zenodo.2626687.</li>
+<li value="17">Weinberger, S. (2015). <i>Speech Accent Archive</i>. George Mason University. http://accent.gmu.edu</li>
+<li value="18">Google (2019). <i>Crowdsourced high-quality Nigerian English speech data set</i> (SLR70). OpenSLR, https://openslr.org/70/ (CC BY-SA 4.0).</li>
+<li value="19">Hugging Face. <i>Spaces overview</i>. Hugging Face Hub documentation, https://huggingface.co/docs/hub/en/spaces-overview (read 20 October 2026). The paid-plan rule for new Docker Spaces was also returned by the Hub's own API on 20 October 2026: "hosting Gradio and Docker Spaces on free cpu-basic requires a PRO subscription".</li>
+<li value="20">Wolf, T. et al. (2020). Transformers: State-of-the-art natural language processing. In <i>Proceedings of EMNLP 2020: System Demonstrations</i>, 38–45.</li>
+<li value="21">Carnegie Mellon University. <i>The CMU Pronouncing Dictionary</i>. https://github.com/cmusphinx/cmudict</li>
+<li value="22">Llarena, J. <i>Britfone</i> (version 3.0.1), a British English pronunciation dictionary. https://github.com/JoseLlarena/Britfone</li>
+<li value="23">Reynolds, D.A. &amp; Rose, R.C. (1995). Robust text-independent speaker identification using Gaussian mixture speaker models. <i>IEEE Transactions on Speech and Audio Processing</i>, 3(1), 72–83.</li>
+</ol>
+<h3>Project documents</h3>
+<div class="tw"><table class="ev">
+<tr><td>[P1]</td><td>VoxPreference: Preference Grammar (PG) Tool. Product Requirement Document (PRD). Team document.</td></tr>
+<tr><td>[P2]</td><td>A Framework for the Automation of Preference Grammar Analysis from Speech. Draft paper, PG automation team.</td></tr>
+<tr><td>[P3]</td><td>User Flow for Preference Grammar System, and the earlier workflow diagram. Team diagrams (redrawn as Figure 1).</td></tr>
+<tr><td>[P4]</td><td>Ten-stage pipeline plan for the automation of PG. Team presentation notes.</td></tr>
+</table></div>
+
+<h2>Evidence in the repository</h2>
+<p>Every test below runs from the repository with public data. The commands run in the Python environment from <code>backend/requirements.txt</code> (or <code>backend/requirements-intel-mac.txt</code> on an Intel Mac); the data scripts (E1, E5) also need <code>pandas</code> and <code>remotezip</code>, and the audit's <code>--wer</code> option needs <code>jiwer</code> (in <code>backend/requirements-train.txt</code>): <code>pip install pandas remotezip jiwer</code>.</p>
+<div class="tw"><table class="ev">
+<tr><th></th><th>Where</th><th>What it shows</th><th>How to rerun</th></tr>
+<tr><td>E1</td><td><code>backend/eval/fyp_audit.py</code></td><td>Reads the training logs published with the fine-tuned model on Hugging Face (thebickersteth/wav2vec2-nigerian-english, runs/May14_12-26-44…); counts the label characters the original script produces; re-runs the original seeded split; with <code>--wer</code> scores the stock model on that split; with <code>--weights</code> compares every tensor with the stock model. Writes data/work/fyp_audit.json.</td><td><code>cd backend &amp;&amp; python -m eval.fyp_audit --wer --weights</code></td></tr>
+<tr><td>E2</td><td><code>git history, commit e72090d</code></td><td>The original backend/finetune_model.py (lowercased labels), backend/utils/split_shuffle_data.py (random 90/10 split, random_state=42) and backend/app.py (the /transcribe endpoint returns the transcription and IPA only).</td><td><code>git show e72090d:backend/app.py</code> (and the other two paths)</td></tr>
+<tr><td>E3</td><td><code>backend/tests/test_tenets.py, backend/tests/test_ot.py</code></td><td>Reproduce Ugorji's <i>think</i> and GOAT evaluations mark for mark, the <i>think</i> flip when [θ] is rare, expert overrides, the two readings of Frequency, and promoting, deleting and pooling tenets under strict domination. The tool prints the reason for each mark (e.g. the 78 word pairs for [t]).</td><td><code>cd backend &amp;&amp; python -m pytest tests/test_tenets.py tests/test_ot.py</code></td></tr>
+<tr><td>E4</td><td><code>backend/eval/saa_gold.py, backend/eval/fit_calibration.py</code></td><td>Scores the phone model against the phoneticians' transcriptions of the 22 Nigerian Speech Accent Archive speakers (753 tokens): accuracy, majority baseline and kappa per sound; keeps a calibration only where kappa rises on held-out speakers. The table is in backend/pg/README.md.</td><td><code>python -m eval.fetch_saa; python -m eval.saa_gold; python -m eval.fit_calibration</code></td></tr>
+<tr><td>E5</td><td><code>backend/eval/slr70.py and the pg command line</code></td><td>Prepares the SLR70 inputs per sound and runs the analyses whose shares are reported in section 6.</td><td><code>python -m eval.slr70</code>, then <code>python -m pg --unit TH-voiceless …</code> on the prepared lists</td></tr>
+<tr><td>E6</td><td><code>backend/eval/diarize_eval.py</code></td><td>Builds conversations from SLR70 speakers whose identities are known and scores speaker separation: speakers found, share of words credited to the right speaker. Seed 0 was used for tuning, seed 1 is the held-out test.</td><td><code>python -m eval.diarize_eval --conversations 8 --minutes 4 --seed 1</code></td></tr>
+<tr><td>E7</td><td><code>backend/pg/README.md, "Known limits"</code></td><td>The findings of the independent review: the model's lean towards dictionary forms, the exploratory status of acoustic sub-clusters and the contrast matrix, and why "same preferred form" is not an accuracy test.</td><td>read the file</td></tr>
+<tr><td>E8</td><td><code>backend/tests/</code></td><td>The whole suite: alignment, phone scoring, tenets, OT evaluation, stability, outputs (CSV, VTT, JSON), speaker separation and the API.</td><td><code>cd backend &amp;&amp; python -m pytest -q</code></td></tr>
+<tr><td>E9</td><td><code>scripts/deploy_space.sh, Dockerfile</code></td><td>Builds and uploads the single image to the Hugging Face Space; the live checks in section 6 were made against https://thebickersteth-voxpreference.hf.space with POST /pg/analyze.</td><td><code>scripts/deploy_space.sh --push</code></td></tr>
+<tr><td>E10</td><td><code>backend/tests/test_models.py</code></td><td>Runs six SLR70 clips through the real models: the variants and preferred form match the recorded reference, Whisper finds the target words, and a 3-speaker conversation is separated correctly. GitHub Actions runs it on every push before deploying (.github/workflows/ci-cd.yml).</td><td><code>cd backend &amp;&amp; PG_MODEL_TESTS=1 python -m pytest -q tests/test_models.py</code></td></tr>
+</table></div>
 </body>
 </html>
