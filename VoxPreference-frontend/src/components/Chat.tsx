@@ -51,6 +51,11 @@ const Chat = () => {
 
   return (
     <div className="flex flex-col h-full">
+      <p className="px-4 py-2 border-b border-amber-300 bg-amber-50 text-sm text-amber-900">
+        Legacy view: it uses the old wav2vec2 model and dictionary IPA, which
+        shows how words are spelled in a dictionary, not how they were
+        pronounced.
+      </p>
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {messages.map((message) => (
           <div

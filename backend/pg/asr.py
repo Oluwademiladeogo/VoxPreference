@@ -1,0 +1,88 @@
+"""Find target words in unscripted speech (podcasts, interviews) that has no transcript.
+
+Whisper transcribes with word timestamps; each hit of a target word is then re-aligned against its
+neighbouring words with the letter aligner, because ASR word times are only approximate, and hits
+whose alignment is poor are dropped instead of being scored.
+"""
+from __future__ import annotations
+
+import hashlib
+import json
+import os
+from dataclasses import asdict, dataclass
+from pathlib import Path
+
+import numpy as np
+
+from .align import WordAligner, WordSpan, words_of
+
+ASR_MODEL = "openai/whisper-small"
+CACHE_DIR = Path(os.environ.get("PG_CACHE", Path(__file__).resolve().parents[1] / "data" / "cache" / "asr"))
+
+
+@dataclass
+class Hit:
+    span: WordSpan  # refined position of the target word
+    context: str  # the words around it, as transcribed
+
+
+class Transcriber:
+    def __init__(self, model_id: str = ASR_MODEL):
+        from transformers import pipeline
+
+        self.model_id = model_id
+        self.pipe = pipeline("automatic-speech-recognition", model=model_id, device="cpu")
+
+    def words(self, audio: np.ndarray) -> list[WordSpan]:
+        """Word spans for the whole recording. Transcripts are cached on disk (keyed by the audio), because
+        transcribing an hour of speech on a CPU takes about an hour and a survey reuses it for every sound."""
+        key = hashlib.sha1(np.ascontiguousarray(audio, dtype=np.float32).tobytes()).hexdigest()[:20]
+        cache = CACHE_DIR / f"{self.model_id.replace('/', '_')}_{key}.json"
+        if cache.exists():
+            return [WordSpan(**w) for w in json.loads(cache.read_text(encoding="utf-8"))]
+        spans = self._transcribe(audio)
+        try:
+            cache.parent.mkdir(parents=True, exist_ok=True)
+            cache.write_text(json.dumps([asdict(w) for w in spans]), encoding="utf-8")
+        except OSError:
+            pass
+        return spans
+
+    def _transcribe(self, audio: np.ndarray) -> list[WordSpan]:
+        out = self.pipe(
+            {"raw": audio, "sampling_rate": 16000},
+            return_timestamps="word",
+            chunk_length_s=30,
+            generate_kwargs={"language": "en", "task": "transcribe"},
+        )
+        spans = []
+        for chunk in out.get("chunks", []):
+            start, end = chunk["timestamp"]
+            for w in words_of(chunk["text"]):
+                if start is not None:
+                    spans.append(WordSpan(w, float(start), float(end if end is not None else start + 0.3), 1.0))
+        return spans
+
+
+def find_targets(audio: np.ndarray, asr_words: list[WordSpan], targets: set[str], aligner: WordAligner,
+                 context: int = 2, pad_s: float = 0.15, min_score: float = 0.2) -> list[Hit]:
+    """Re-align every transcribed occurrence of a target word inside a short window of its neighbours."""
+    hits = []
+    for i, w in enumerate(asr_words):
+        if w.word not in targets:
+            continue
+        lo, hi = max(0, i - context), min(len(asr_words), i + context + 1)
+        window = asr_words[lo:hi]
+        t0 = max(0.0, window[0].start - pad_s)
+        t1 = min(len(audio) / 16000, window[-1].end + pad_s)
+        segment = audio[int(t0 * 16000):int(t1 * 16000)]
+        text = " ".join(x.word for x in window)
+        try:
+            spans = aligner.align(segment, text)
+        except (ValueError, RuntimeError):
+            continue
+        mine = spans[i - lo] if len(spans) == len(window) else None
+        if mine is None or mine.word != w.word or mine.score < min_score:
+            continue
+        hits.append(Hit(WordSpan(w.word, t0 + mine.start, t0 + mine.end, mine.score), text))
+    return hits

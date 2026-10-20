@@ -1,0 +1,28 @@
+# The versions the pipeline was tested with (Intel Mac, Python 3.12; also used by the Dockerfile). PyTorch's last Intel-mac wheels are 2.2.2, which needs
+# numpy<2, and transformers 4.52+ refuses .bin weights (the phone models ship only .bin) unless torch>=2.6.
+torch==2.2.2
+torchaudio==2.2.2
+numpy==1.26.4
+transformers==4.51.3
+huggingface-hub==0.36.2
+safetensors==0.8.0
+tokenizers==0.21.4
+scipy==1.17.1
+scikit-learn==1.9.1
+soundfile==0.14.0
+wordfreq==3.1.1
+fastapi==0.109.2
+uvicorn==0.27.1
+python-multipart==0.0.28
+librosa==0.11.0
+phonemizer==3.3.0  # /transcribe also needs espeak-ng installed
+speechbrain==1.0.3  # speaker separation (pg/diarize.py)
+numba==0.62.1  # last release with Intel-mac wheels
+llvmlite==0.45.1
+pytest==9.1.1
+httpx<0.28  # FastAPI 0.109's TestClient predates httpx 0.28
+# only for finetune_model.py
+datasets==3.6.0
+pyarrow==19.0.1
+accelerate==1.10.1
+jiwer==4.0.0
