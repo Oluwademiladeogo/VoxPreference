@@ -2,8 +2,10 @@
 from __future__ import annotations
 
 import io
+import os
 import shutil
 import subprocess
+import tempfile
 
 import numpy as np
 
@@ -31,16 +33,32 @@ def load(source, sr: int = SR) -> np.ndarray:
 
 
 def _ffmpeg(data, sr: int) -> np.ndarray:
-    """Decode formats libsndfile cannot read (mp3, m4a, webm/opus from browsers)."""
+    """Decode formats libsndfile cannot read (mp3, m4a, webm/opus from browsers). Uploaded bytes go through a
+    temporary file: MP4/M4A keep their index at the end, which ffmpeg cannot reach on a pipe (it then returns
+    no audio at all, without an error)."""
     exe = shutil.which("ffmpeg")
     if exe is None:
         raise RuntimeError("this audio format needs ffmpeg, which is not installed")
-    cmd = [exe, "-nostdin", "-loglevel", "error", "-i", "pipe:0" if isinstance(data, (bytes, bytearray)) else str(data),
-           "-f", "f32le", "-ac", "1", "-ar", str(sr), "pipe:1"]
-    proc = subprocess.run(cmd, input=data if isinstance(data, (bytes, bytearray)) else None, capture_output=True, check=False)
+    tmp = None
+    try:
+        if isinstance(data, (bytes, bytearray)):
+            tmp = tempfile.NamedTemporaryFile(suffix=".audio", delete=False)
+            tmp.write(data)
+            tmp.close()
+            src = tmp.name
+        else:
+            src = str(data)
+        cmd = [exe, "-nostdin", "-loglevel", "error", "-i", src, "-f", "f32le", "-ac", "1", "-ar", str(sr), "pipe:1"]
+        proc = subprocess.run(cmd, capture_output=True, check=False)
+    finally:
+        if tmp is not None:
+            os.unlink(tmp.name)
     if proc.returncode != 0:
         raise RuntimeError(f"could not decode audio: {proc.stderr.decode(errors='replace').strip()[:300]}")
-    return np.frombuffer(proc.stdout, dtype=np.float32).copy()
+    audio = np.frombuffer(proc.stdout, dtype=np.float32).copy()
+    if audio.size == 0:
+        raise RuntimeError("the file decoded to no audio; it may be damaged or not an audio file")
+    return audio
 
 
 def trim(audio: np.ndarray, sr: int = SR, threshold_db: float = 35.0, pad_s: float = 0.15) -> tuple[np.ndarray, float]:

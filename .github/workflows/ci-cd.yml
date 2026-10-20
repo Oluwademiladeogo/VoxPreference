@@ -57,6 +57,7 @@ jobs:
           python-version: "3.12"
           cache: pip
           cache-dependency-path: backend/requirements.txt
+      - run: sudo apt-get update && sudo apt-get install -y --no-install-recommends ffmpeg
       - run: pip install --extra-index-url https://download.pytorch.org/whl/cpu -r requirements.txt
       # the pronunciation dictionaries (small); these tests use stand-ins for the large speech models
       - run: python -m pg.kb.fetch
