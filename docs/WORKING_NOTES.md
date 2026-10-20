@@ -40,7 +40,8 @@ thesis PDF in ~/Downloads. Team: Ugorji, Dr Olamma Iheanetu (supervisor), the us
   fit_calibration.py (kappa-based validation + calibration), slr70.py, fetch_saa.py.
 - backend/app.py: GET /pg/units, POST /pg/analyze (lock, upload limits), and serves the built frontend
   (VoxPreference-frontend/dist) from the same address. Dockerfile at repo root (NOT yet build-tested).
-  backend/requirements-tested.txt = tested pins (torch 2.2.2, numpy<2, transformers 4.51.3).
+  backend/requirements.txt = Linux/live pins (torch 2.14, transformers 5.18; CI tests them incl. real models);
+  backend/requirements-intel-mac.txt = laptop pins (torch 2.2.2, numpy<2, transformers 4.51.3); requirements-train.txt.
 - Frontend PG view (default page): validation badges, ranking editor, podcast checkbox, frequency-mode choice,
   calibration toggle, PG-style table with OT toggle. Lint/build pass; checked live in Chrome.
 - Tests: 39 backend tests pass: `cd backend && ~/.venvs/voxpref/bin/python -m pytest -q`.
@@ -123,3 +124,12 @@ How do we move forward? Plus the podcast results.
   analysed in 18 s; 63 s 3-speaker synthetic podcast with asr+diarization in 48 s, 3 speakers found, 5/5 tokens
   credited consistently). scripts/deploy_space.sh --push still uses `hf upload` (create step) -> switch to upload_folder.
 - Not done (needs user OK): daily keep-awake ping via GitHub Actions (commit + push).
+- 20 Oct ~09:50: ONE REPO. PR #17 merged into main (all work). .github/workflows/ci-cd.yml: frontend lint/build +
+  backend pytest on push/PR; on push to main deploys to the Space via HF Trusted Publishers (configured in Space
+  settings: repo Oluwademiladeogo/VoxPreference, ref main, workflow ci-cd.yml; no HF_TOKEN secret); waits for
+  RUNNING and curls /pg/units; daily keep-awake job (06:17 Lagos) that also re-enables the workflow. First auto
+  deploy run 39395858170 succeeded. User refused to rotate the pasted token; respect that.
+- Report is now a design review of the FULL PG tool (PRD, Prof's framework, user flow, decks; FYP = speech-to-text
+  block only, outlined). No HMM-GMM/Kaldi. Black and white. 10 pages. Podcast section placeholder.
+- Dependabot: many alerts from pinned torch 2.2.2 / transformers 4.51.3 (Intel-Mac pins) and python-multipart;
+  the deployed image is Linux and could use newer pins (needs transformers 5 / torch 2.6+ validation in CI).

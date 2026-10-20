@@ -56,14 +56,40 @@ jobs:
         with:
           python-version: "3.12"
           cache: pip
-          cache-dependency-path: backend/requirements-tested.txt
-      - run: pip install --extra-index-url https://download.pytorch.org/whl/cpu -r requirements-tested.txt
-      # the pronunciation dictionaries (small); the tests use stand-ins for the large speech models
+          cache-dependency-path: backend/requirements.txt
+      - run: pip install --extra-index-url https://download.pytorch.org/whl/cpu -r requirements.txt
+      # the pronunciation dictionaries (small); these tests use stand-ins for the large speech models
       - run: python -m pg.kb.fetch
       - run: python -m pytest -q
 
+  models:
+    # the real models (about 3 GB) on six Nigerian recordings: the same sounds heard, the words found, the speakers
+    # separated (tests/test_models.py); guards every library upgrade before it reaches the live app
+    if: github.event_name != 'schedule'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    env:
+      PG_MODEL_TESTS: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/huggingface
+          key: hf-models-${{ hashFiles('backend/pg/phones.py', 'backend/pg/align.py', 'backend/pg/asr.py', 'backend/pg/diarize.py') }}
+      - run: sudo apt-get update && sudo apt-get install -y --no-install-recommends ffmpeg espeak-ng
+      - run: pip install --extra-index-url https://download.pytorch.org/whl/cpu -r requirements.txt
+      - run: python -m pg.kb.fetch
+      - run: python -m pytest -q tests/test_models.py
+
   deploy:
-    needs: [frontend, backend]
+    needs: [frontend, backend, models]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     permissions:

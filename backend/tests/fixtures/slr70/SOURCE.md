@@ -1,0 +1,1 @@
+Six utterances from the Crowdsourced high-quality Nigerian English speech data set (OpenSLR 70), Google, licensed CC BY-SA 4.0: https://openslr.org/70/ (Guevara-Rukoz et al. 2020). Resampled to 16 kHz mono 16-bit. Used only by tests/test_models.py.

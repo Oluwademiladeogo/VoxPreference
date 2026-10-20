@@ -110,7 +110,8 @@ Outputs: `operability_table.csv`, `tokens.csv` (every token with variant, confid
 
 ## Setup
 
-`pip install -r requirements.txt` (on an Intel Mac: `requirements-tested.txt`, which pins the last
-PyTorch with Intel wheels). The lexicons download on first use (`python -m pg.kb.fetch`); models download from
+`pip install --extra-index-url https://download.pytorch.org/whl/cpu -r requirements.txt` (Linux; what the live app
+runs). On an Intel Mac: `requirements-intel-mac.txt`, which pins the last PyTorch with Intel wheels. For
+`finetune_model.py` add `requirements-train.txt`. The lexicons download on first use (`python -m pg.kb.fetch`); models download from
 Hugging Face. `kb/typology.json` is built from PHOIBLE by `python -m pg.kb.build_typology`.
-Tests: `pytest` in `backend/`. Reproduce the evaluation: `python -m eval.fetch_saa`, `python -m eval.saa_gold`, `python -m eval.fit_calibration` (add `--write` to refresh `kb/calibration.json` and the validation status in `kb/units.json`); SLR70 inputs: `python -m eval.slr70`.
+Tests: `pytest` in `backend/`; the real-model checks run with `PG_MODEL_TESTS=1 pytest tests/test_models.py`. Reproduce the evaluation: `python -m eval.fetch_saa`, `python -m eval.saa_gold`, `python -m eval.fit_calibration` (add `--write` to refresh `kb/calibration.json` and the validation status in `kb/units.json`); SLR70 inputs: `python -m eval.slr70`.

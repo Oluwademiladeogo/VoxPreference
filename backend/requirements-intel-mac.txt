@@ -1,0 +1,25 @@
+# The local environment on an Intel Mac (Python 3.12). PyTorch's last Intel-mac wheels are 2.2.2, which needs numpy<2,
+# and transformers 4.52+ refuses the phone models' .bin weights unless torch>=2.6, so those three stay old here.
+# The live app runs requirements.txt (current versions). Everything else below is current.
+torch==2.2.2
+torchaudio==2.2.2
+numpy==1.26.4
+transformers==4.51.3
+huggingface-hub==0.36.2
+safetensors==0.8.0
+tokenizers==0.21.4
+speechbrain==1.0.3
+scipy==1.17.1
+scikit-learn==1.9.1
+soundfile==0.14.0
+librosa==0.11.0
+numba==0.62.1  # last release with Intel-mac wheels
+llvmlite==0.45.1
+wordfreq==3.1.1
+phonemizer==3.4.0
+fastapi==0.142.2
+starlette==1.7.0
+uvicorn==0.54.0
+python-multipart==0.0.32
+pytest==9.1.1
+httpx==0.28.1

@@ -145,10 +145,9 @@ class Analyzer:
             return None
         key = (rec.name, len(rec.audio), rec.num_speakers)
         if key not in self._turns:
-            speech = None
-            if rec.transcript.strip().lower() == "auto":
-                speech = [(w.start, w.end) for w in self.transcriber.words(rec.audio)]
-            self._turns[key] = self.diarizer(rec.audio, speech, rec.num_speakers)
+            # speech is found from loudness, as in the speaker-separation test (eval/diarize_eval.py); Whisper's
+            # word times are looser and let silence into the voice samples
+            self._turns[key] = self.diarizer(rec.audio, None, rec.num_speakers)
         return self._turns[key]
 
     def merger_neighbours(self, canonical: dict, unit: Unit) -> dict[str, str]:

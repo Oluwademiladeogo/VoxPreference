@@ -11,9 +11,9 @@ RUN npm run build
 FROM python:3.12-slim
 RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg espeak-ng && rm -rf /var/lib/apt/lists/*
 WORKDIR /app/backend
-# the same pins the pipeline was tested with; CPU-only PyTorch keeps the image small
-COPY backend/requirements-tested.txt ./
-RUN pip install --no-cache-dir --extra-index-url https://download.pytorch.org/whl/cpu -r requirements-tested.txt
+# the pins GitHub Actions tests (including the real-model checks) before every deploy; CPU-only PyTorch keeps the image small
+COPY backend/requirements.txt ./
+RUN pip install --no-cache-dir --extra-index-url https://download.pytorch.org/whl/cpu -r requirements.txt
 COPY backend/ ./
 COPY --from=frontend /frontend/dist /app/VoxPreference-frontend/dist
 # lexicons and models are fetched at build time so the first analysis does not wait for downloads

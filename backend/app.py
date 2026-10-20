@@ -1,3 +1,4 @@
+from contextlib import asynccontextmanager
 from dataclasses import asdict
 import threading
 from typing import List, Optional
@@ -18,7 +19,15 @@ from pg.ot import DEFAULT_RANKING, TENET_NAMES, TENETS, parse_ranking
 from pg.report import contrast_csv, html_report, subclusters_csv, tokens_csv
 from pg.tenets import load_units, settings_from
 
-app = FastAPI()
+@asynccontextmanager
+async def lifespan(_app):
+    # PG_WARM=1 (set in the Docker image) loads the models in the background as soon as the server starts
+    if os.environ.get("PG_WARM") == "1":
+        threading.Thread(target=lambda: get_analyzer().aligner, daemon=True).start()
+    yield
+
+
+app = FastAPI(lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -94,8 +103,7 @@ _analyzer_lock = threading.Lock()
 
 
 def get_analyzer():
-    # the phone model is large, so it loads on the first PG request, or in the background at start-up
-    # when PG_WARM=1 (the Docker image sets it, so a woken Space is ready sooner)
+    # the phone model is large, so it loads on the first PG request, or at start-up when PG_WARM=1 (see lifespan)
     global _analyzer
     with _analyzer_lock:
         if _analyzer is None:
@@ -104,10 +112,6 @@ def get_analyzer():
     return _analyzer
 
 
-@app.on_event("startup")
-def _warm_up():
-    if os.environ.get("PG_WARM") == "1":
-        threading.Thread(target=lambda: get_analyzer().aligner, daemon=True).start()
 
 
 @app.get("/pg/units")
