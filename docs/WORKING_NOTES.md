@@ -145,3 +145,6 @@ How do we move forward? Plus the podcast results.
   table with source "auto", unvalidated. Results page shows marks/outcome/why. Verified live end to end
   (3-speaker SLR70 mix: 2 think tokens, 3 speakers found, θɪŋk preferred, tɪŋk out at DisaM).
 - Bug found live and fixed: cluster.two_level silhouette crashed with 2 tokens of 2 variants.
+- 20 Oct ~15:00 DONE: podcast tested end to end on the live app with a 10-min cut (full-length reruns stopped at the
+  user's request; they were annoyed by repeated long runs: prefer short cuts for end-to-end checks). Results in
+  docs/PODCAST_TEST.md and report §Podcast test. Fixes found by it: windowed ASR, loop filter, M4A-from-bytes decode.
